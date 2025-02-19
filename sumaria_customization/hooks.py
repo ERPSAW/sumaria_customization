@@ -5,6 +5,31 @@ app_description = "Sumaria Customization"
 app_email = "erp@sawindia.com"
 app_license = "mit"
 
+doc_events = {
+    "Sales Order": {
+	    "validate": "sumaria_customization.overrides.sales_order.check_discount",
+    }
+}
+
+doctype_js = {"Sales Order" : "public/js/sales_order.js"}
+
+fixtures = [
+    {"dt": "Custom Field", "filters": [
+        [
+            "module", "=", "Sumaria Customization"
+        ]
+    ]},
+    {"dt": "Property Setter", "filters": [
+        [
+            "module", "=", "Sumaria Customization"
+        ]
+    ]},
+    {"dt": "Workflow", "filters": [
+        [
+            "name", "=", "Sales Order Discount"
+        ]
+    ]},
+]
 # Apps
 # ------------------
 
