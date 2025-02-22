@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class ReturnItemRateDetail(Document):
+class DiscountApprovalMatrixDetail(Document):
 	pass
