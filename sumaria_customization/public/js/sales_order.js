@@ -5,11 +5,6 @@ frappe.ui.form.on("Sales Order Item", {
         frappe.model.set_value(cdt, cdn, 'discount_amount', row.custom_return_item_amount + row.custom_additional_discount_amount);
         frm.refresh_fields("items");
     },
-    qty: function (frm, cdt, cdn) {
-        var row = locals[cdt][cdn];
-        if (row.qty < row.custom_return_qty)
-            frappe.throw("return quantity cannot be greater than item quantity");
-    },
     custom_additional_discount: function (frm, cdt, cdn) {
         var row = locals[cdt][cdn];
         row.custom_additional_discount_amount = row.price_list_rate * (row.custom_additional_discount / 100);
