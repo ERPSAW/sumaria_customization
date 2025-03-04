@@ -13,13 +13,4 @@ frappe.ui.form.on("Discount Approval Matrix", {
         });
 	},
 });
-frappe.ui.form.on("Discount Approval Matrix Detail", {
-    details_add:function(frm,cdt,cdn){
-        previous = 0
-        $.each(frm.doc.details,function(idx,row){
-            frappe.model.set_value(row.doctype,row.name,'discount_from',previous);
-            previous = row.discount;
-        });
-    }
-});
 

@@ -7,38 +7,28 @@ app_license = "mit"
 
 doc_events = {
     "Sales Order": {
-	    "validate": "sumaria_customization.overrides.sales_order.check_discount",
+        "validate": "sumaria_customization.overrides.sales_order.check_discount",
     }
 }
 
 doctype_js = {
-    "Sales Order" : "public/js/sales_order.js",
-    "Delivery Note" : "public/js/delivery_note.js",
-    "Sales Invoice" : "public/js/sales_invoice.js",
-    }
+    "Sales Order": "public/js/sales_order.js",
+    "Delivery Note": "public/js/delivery_note.js",
+    "Sales Invoice": "public/js/sales_invoice.js",
+}
 
 fixtures = [
-    {"dt": "Custom Field", "filters": [
-        [
-            "module", "=", "Sumaria Customization"
-        ]
-    ]},
-    {"dt": "Property Setter", "filters": [
-        [
-            "module", "=", "Sumaria Customization"
-        ]
-    ]},
-    {"dt": "Workflow", "filters": [
-        [
-            "name", "=", "Sales Order Discount"
-        ]
-    ]},
-    {"dt": "Role", "filters": [
-        [
-            "name", "=", "Sales Director"
-        ]
-    ]},
+    {"dt": "Custom Field", "filters": [["module", "=", "Sumaria Customization"]]},
+    {"dt": "Property Setter", "filters": [["module", "=", "Sumaria Customization"]]},
+    {"dt": "Workflow", "filters": [["name", "=", "Sales Order Discount"]]},
 ]
+
+
+override_whitelisted_methods = {
+	"erpnext.stock.get_item_details.get_item_details": "sumaria_customization.overrides.get_item_details.get_item_details",
+	"erpnext.stock.get_item_details.apply_price_list": "sumaria_customization.overrides.get_item_details.apply_price_list"
+}
+
 # Apps
 # ------------------
 
