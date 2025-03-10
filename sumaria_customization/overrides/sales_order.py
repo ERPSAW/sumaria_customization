@@ -15,6 +15,7 @@ def check_discount(doc, method=None):
 
 
 def create_mr(doc, method=None):
+        return_flag = False
         document = {
             "doctype": "Material Request",
             "material_request_type": "Customer Provided",
@@ -30,5 +31,7 @@ def create_mr(doc, method=None):
         for item in doc.items:
             if item.custom_is_return and item.custom_return_item:
                 request.append('items',{'item_code':item.item_code ,'qty':item.qty,'warehouse':doc.custom_return_godown,'schedule_date':item.delivery_date})
-        request.save()
-        request.submit()
+                return_flag = True
+        if return_flag:
+            request.save()
+            request.submit()
