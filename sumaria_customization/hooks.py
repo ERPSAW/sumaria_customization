@@ -8,6 +8,7 @@ app_license = "mit"
 doc_events = {
     "Sales Order": {
         "validate": "sumaria_customization.overrides.sales_order.check_discount",
+        "on_submit": "sumaria_customization.overrides.sales_order.create_mr",
     }
 }
 

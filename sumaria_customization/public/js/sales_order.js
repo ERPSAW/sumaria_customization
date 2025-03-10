@@ -5,13 +5,26 @@ frappe.ui.form.on("Sales Order Item", {
     qty: function (frm, cdt, cdn) {
         var row = locals[cdt][cdn];
         if (row.custom_is_return) {
+            if (row.qty > 1) {
+                frappe.model.set_value(cdt, cdn, 'qty', 1);
+                frappe.throw("As Has Buyback is enable only one item is allowed on one Row. In case of more than 1 sales Item add the item on next row");
+            }
             frappe.model.set_value(cdt, cdn, 'custom_return_qty', row.qty);
             update_price(frm, cdt, cdn);
         }
     },
+    price_list_rate: function (frm, cdt, cdn) {
+        var row = locals[cdt][cdn];
+        if (!row.custom_is_return && row.price_list_rate != row.custom_item_price) {
+            frappe.model.set_value(cdt, cdn, 'price_list_rate', row.custom_item_price);
+        }
+    },
     custom_is_return: function (frm, cdt, cdn) {
         var row = locals[cdt][cdn];
-        frappe.model.set_value(cdt, cdn, 'custom_return_qty', row.qty);
+        if (row.custom_is_retur) {
+            frappe.model.set_value(cdt, cdn, 'custom_return_qty', 1);
+            frappe.model.set_value(cdt, cdn, 'qty', 1);
+        }
     },
     custom_item_price: function (frm, cdt, cdn) {
         var row = locals[cdt][cdn];
@@ -44,6 +57,8 @@ frappe.ui.form.on("Sales Order Item", {
                 if (!r.exc) {
                     frappe.model.set_value(cdt, cdn, "custom_return_item_rate", r.message.price_list_rate)
                     frappe.model.set_value(cdt, cdn, 'price_list_rate', row.custom_item_price - row.custom_return_item_rate);
+                    frappe.model.set_value(cdt, cdn, "margin_type", "Amount")
+                    frappe.model.set_value(cdt, cdn, "margin_rate_or_amount", row.custom_return_item_rate)
                 }
             }
         });
