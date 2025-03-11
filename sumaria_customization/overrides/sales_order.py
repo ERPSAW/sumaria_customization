@@ -30,8 +30,11 @@ def create_mr(doc, method=None):
         request = frappe.get_doc(document)
         for item in doc.items:
             if item.custom_is_return and item.custom_return_item:
-                request.append('items',{'item_code':item.item_code ,'qty':item.qty,'warehouse':doc.custom_return_godown,'schedule_date':item.delivery_date,'sales_order':doc.name,'sales_order_item':item.name})
+                request.append('items',{'item_code':item.custom_return_item ,'qty':item.custom_return_qty,'warehouse':doc.custom_return_godown,'schedule_date':item.delivery_date,'sales_order':doc.name,'sales_order_item':item.name})
                 return_flag = True
         if return_flag:
             request.save()
             request.submit()
+        for item in doc.items:
+            if item.custom_is_return and item.custom_return_item:
+                frappe.msgprint(f"Material Request is created for buyback item {item.custom_return_item}")
