@@ -21,9 +21,11 @@ frappe.ui.form.on("Sales Order Item", {
     },
     custom_is_return: function (frm, cdt, cdn) {
         var row = locals[cdt][cdn];
-        if (row.custom_is_retur) {
-            frappe.model.set_value(cdt, cdn, 'custom_return_qty', 1);
-            frappe.model.set_value(cdt, cdn, 'qty', 1);
+        if (row.custom_is_return) {
+            if (row.qty > 1) {
+                frappe.msgprint("Buyback can only be selected if the new item quantity is 1")
+                frappe.model.set_value(cdt, cdn, 'custom_is_return', 0);
+            }
         }
     },
     custom_item_price: function (frm, cdt, cdn) {
