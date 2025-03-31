@@ -24,6 +24,7 @@ def apply_price_list(args, as_doc=False, doc=None):
         doc_dict = json.loads(doc)
         if doc_dict["doctype"] in ["Sales Order","Delivery Note","Sales Invoice"]:
             for idx,item in enumerate(doc_dict["items"]):
-                if len( data["children"]) > idx:
+                keys = data["children"][idx].keys()
+                if len( data["children"]) > idx and "price_list_rate" in keys:
                     data["children"][idx]["price_list_rate"] =  data["children"][idx]["price_list_rate"] - item["custom_return_item_rate"]
     return data

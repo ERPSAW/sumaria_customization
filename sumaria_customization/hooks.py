@@ -9,19 +9,24 @@ doc_events = {
     "Sales Order": {
         "validate": "sumaria_customization.overrides.sales_order.check_discount",
         "on_submit": "sumaria_customization.overrides.sales_order.create_mr",
-    }
+    },
+    "Payment Entry": {
+        "on_submit": "sumaria_customization.overrides.payment_entry.create_journal_entry",
+    },
 }
 
 doctype_js = {
     "Sales Order": "public/js/sales_order.js",
     "Delivery Note": "public/js/delivery_note.js",
     "Sales Invoice": "public/js/sales_invoice.js",
+    "Payment Entry": "public/js/payment_entry.js",
 }
 
 fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Sumaria Customization"]]},
     {"dt": "Property Setter", "filters": [["module", "=", "Sumaria Customization"]]},
     {"dt": "Workflow", "filters": [["name", "=", "Sales Order Discount"]]},
+    {"dt": "Party Type", "filters": [["name", "=", "Consumer Finance Provider"]]},
 ]
 
 

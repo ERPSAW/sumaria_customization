@@ -1,0 +1,10 @@
+[
+ {
+  "account_type": "Receivable",
+  "docstatus": 0,
+  "doctype": "Party Type",
+  "modified": "2025-03-24 16:48:35.349975",
+  "name": "Consumer Finance Provider",
+  "party_type": "Consumer Finance Provider"
+ }
+]
