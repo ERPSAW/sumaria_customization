@@ -1,0 +1,9 @@
+# Copyright (c) 2025, Software At Work (India) Pvt. Ltd. and contributors
+# For license information, please see license.txt
+
+# import frappe
+from frappe.model.document import Document
+
+
+class ConsumerFinanceProvider(Document):
+	pass

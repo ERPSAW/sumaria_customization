@@ -37,6 +37,9 @@ frappe.ui.form.on("Payment Entry", {
     },
     custom_dis_paid_by_customer: function (frm) {
         calculate_finance(frm);
+    },
+    custom_dis_included_in_down_payment: function (frm) {
+        calculate_finance(frm);
     }
 });
 function calculate_finance(frm) {
@@ -47,7 +50,10 @@ function calculate_finance(frm) {
             disbursement_amount = frm.doc.custom_product_price - frm.doc.custom_dealer_interest_subsidy - frm.doc.custom_down_payment;
         frm.set_value('custom_disbursement_amount', disbursement_amount);
         if (frm.doc.custom_dis_paid_by_customer)
-            frm.set_value('paid_amount', frm.doc.custom_down_payment + frm.doc.custom_dealer_interest_subsidy);
+            if(frm.doc.custom_dis_included_in_down_payment == "Yes")
+                frm.set_value('paid_amount', frm.doc.custom_down_payment);
+            else
+                frm.set_value('paid_amount', frm.doc.custom_down_payment + frm.doc.custom_dealer_interest_subsidy);
         else
             frm.set_value('paid_amount', frm.doc.custom_down_payment);
 
