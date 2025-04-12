@@ -40,6 +40,15 @@ frappe.ui.form.on("Payment Entry", {
     },
     custom_dis_included_in_down_payment: function (frm) {
         calculate_finance(frm);
+    },
+    custom_swipe_amount: function (frm) {
+        calculate_credit_card(frm);
+    },
+    custom_instant_cash_discount: function (frm) {
+        calculate_credit_card(frm);
+    },
+    custom_interest_subvention: function (frm) {
+        calculate_credit_card(frm);
     }
 });
 function calculate_finance(frm) {
@@ -57,5 +66,12 @@ function calculate_finance(frm) {
         else
             frm.set_value('paid_amount', frm.doc.custom_down_payment);
 
+    }
+}
+
+function calculate_credit_card(frm){
+    if (frm.doc.mode_of_payment == "Credit Card") {
+        let paid_amount = frm.doc.custom_swipe_amount - frm.doc.custom_instant_cash_discount - frm.doc.custom_interest_subvention;
+        frm.set_value('paid_amount', paid_amount);
     }
 }

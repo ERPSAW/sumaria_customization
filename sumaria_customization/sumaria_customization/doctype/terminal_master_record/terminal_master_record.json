@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:terminal_id",
+ "creation": "2025-04-11 11:53:35.841530",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "terminal_id",
+  "shop",
+  "merchant_id",
+  "merchant_bank",
+  "terminal_provider"
+ ],
+ "fields": [
+  {
+   "fieldname": "shop",
+   "fieldtype": "Link",
+   "label": "Shop",
+   "options": "Shop"
+  },
+  {
+   "fieldname": "merchant_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Merchant ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "merchant_bank",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Merchant Bank",
+   "options": "Bank Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "terminal_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Terminal ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "terminal_provider",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Terminal Provider",
+   "options": "Terminal Provider",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-04-12 15:12:27.021715",
+ "modified_by": "Administrator",
+ "module": "Sumaria Customization",
+ "name": "Terminal Master Record",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
