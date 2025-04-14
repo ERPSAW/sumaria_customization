@@ -27,7 +27,7 @@ fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Sumaria Customization"]]},
     {"dt": "Property Setter", "filters": [["module", "=", "Sumaria Customization"]]},
     {"dt": "Workflow", "filters": [["name", "=", "Sales Order Discount"]]},
-    {"dt": "Party Type", "filters": [["name", "=", "Consumer Finance Provider"]]},
+    {"dt": "Party Type", "filters": [["name", "in", ["Consumer Finance Provider","Terminal Provider"]]]},
 ]
 
 
