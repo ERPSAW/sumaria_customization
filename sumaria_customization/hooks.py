@@ -21,6 +21,7 @@ doctype_js = {
     "Delivery Note": "public/js/delivery_note.js",
     "Sales Invoice": "public/js/sales_invoice.js",
     "Payment Entry": "public/js/payment_entry.js",
+    "Bank Account": "public/js/bank_account.js",
 }
 
 fixtures = [

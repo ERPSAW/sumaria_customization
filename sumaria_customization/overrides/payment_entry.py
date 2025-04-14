@@ -61,8 +61,6 @@ def create_journal_entry_credit_card(doc, method=None):
             "company": doc.company,
             "entry_type": "Journal Entry",
             "posting_date": doc.posting_date,
-            "total_debit": (doc.paid_amount),
-            "total_credit": (doc.paid_amount),
             "custom_transaction_id": doc.custom_transaction_id,
             "custom_terminal_id": doc.custom_terminal_id,
             "custom_swipe_amount": doc.custom_swipe_amount,
@@ -73,6 +71,9 @@ def create_journal_entry_credit_card(doc, method=None):
         terminal_provider = frappe.db.get_value(
             "Terminal Master Record", doc.custom_terminal_id, "terminal_provider"
         )
+        bank_account = frappe.db.get_value(
+            "Terminal Master Record", doc.custom_terminal_id, "merchant_bank"
+        )
         jvdoc.append(
             "accounts",
             {
@@ -81,7 +82,24 @@ def create_journal_entry_credit_card(doc, method=None):
                 ),
                 "party_type": "Terminal Provider",
                 "party": terminal_provider,
-                "debit_in_account_currency": doc.paid_amount,
+                "debit_in_account_currency": doc.custom_instant_cash_discount
+                + doc.custom_interest_subvention,
+                "branch": doc.branch,
+            },
+        )
+        jvdoc.append(
+            "accounts",
+            {
+                "account": frappe.db.get_value(
+                    "Bank Account", bank_account, "custom_merchant_account"
+                ),
+                "bank_account": bank_account,
+                "party_type": frappe.db.get_value(
+                    "Bank Account", bank_account, "party"
+                ),
+                "party": frappe.db.get_value("Bank Account", bank_account, "party"),
+                "debit_in_account_currency": doc.custom_swipe_amount
+                - (doc.custom_instant_cash_discount + doc.custom_interest_subvention),
                 "branch": doc.branch,
             },
         )
@@ -93,7 +111,7 @@ def create_journal_entry_credit_card(doc, method=None):
                 ),
                 "party_type": doc.party_type,
                 "party": doc.party,
-                "credit_in_account_currency": doc.paid_amount,
+                "credit_in_account_currency": doc.custom_swipe_amount,
                 "branch": doc.branch,
                 "reference_type": "Sales Order",
                 "reference_name": reference,
