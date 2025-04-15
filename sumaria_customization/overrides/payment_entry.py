@@ -52,7 +52,7 @@ def create_journal_entry(doc, method=None):
 
 
 def create_journal_entry_credit_card(doc, method=None):
-    if doc.mode_of_payment:
+    if doc.mode_of_payment == "Credit Card":
         reference = None
         for ref in doc.references:
             reference = ref.reference_name
