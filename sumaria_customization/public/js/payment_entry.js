@@ -1,7 +1,7 @@
 
 frappe.ui.form.on("Payment Entry", {
-    custom_is_financed: function (frm) {
-        if (frm.doc.custom_is_financed) {
+    mode_of_payment: function (frm) {
+        if (frm.doc.mode_of_payment == "Consumer Finance") {
             let orders = []
             for(var i in frm.doc.references){
                 if(frm.doc.references[i].reference_doctype = 'Sales Order')
@@ -16,10 +16,6 @@ frappe.ui.form.on("Payment Entry", {
                     if(response.message){
                         frm.set_value('custom_product_price', response.message.price);
                         frm.set_value('custom_dealer_interest_subsidy', response.message.fee);
-                        if(response.message.fee > 0)
-                            frm.set_value('custom_dis_paid_by_customer', 1);
-                        else
-                            frm.set_value('custom_dis_paid_by_customer', 0);
                     }
                 },
             });
@@ -52,20 +48,16 @@ frappe.ui.form.on("Payment Entry", {
     }
 });
 function calculate_finance(frm) {
-    if (frm.doc.custom_is_financed) {
-        if(frm.doc.custom_dis_paid_by_customer)
-            disbursement_amount = frm.doc.custom_product_price - frm.doc.custom_down_payment;
-        else
-            disbursement_amount = frm.doc.custom_product_price - frm.doc.custom_dealer_interest_subsidy - frm.doc.custom_down_payment;
+    if (frm.doc.mode_of_payment == "Consumer Finance") {
+        disbursement_amount = frm.doc.custom_product_price - frm.doc.custom_dealer_interest_subsidy - frm.doc.custom_down_payment;
         frm.set_value('custom_disbursement_amount', disbursement_amount);
-        if (frm.doc.custom_dis_paid_by_customer)
-            if(frm.doc.custom_dis_included_in_down_payment == "Yes")
-                frm.set_value('paid_amount', frm.doc.custom_down_payment);
-            else
-                frm.set_value('paid_amount', frm.doc.custom_down_payment + frm.doc.custom_dealer_interest_subsidy);
-        else
-            frm.set_value('paid_amount', frm.doc.custom_down_payment);
-
+        frm.set_value('paid_amount', frm.doc.custom_down_payment);
+        if((frm.doc.custom_dealer_interest_subsidy/frm.doc.custom_product_price)*100 > 3.54){
+            frm.set_value('custom_finance_charges', frm.doc.custom_dealer_interest_subsidy);
+        }
+        else{
+            frm.set_value('custom_finance_charges', frm.doc.custom_product_price * 0.0354);
+        }
     }
 }
 

@@ -11,8 +11,7 @@ doc_events = {
         "on_submit": "sumaria_customization.overrides.sales_order.create_mr",
     },
     "Payment Entry": {
-        "on_submit": "sumaria_customization.overrides.payment_entry.create_journal_entry",
-        "validate": "sumaria_customization.overrides.payment_entry.create_journal_entry_credit_card",
+        "validate": "sumaria_customization.overrides.payment_entry.validate",
     },
 }
 
