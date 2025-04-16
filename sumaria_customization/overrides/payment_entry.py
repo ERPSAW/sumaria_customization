@@ -21,7 +21,7 @@ def validate(doc, method=None):
         )
 
 def create_journal_entry(doc):
-    amount = doc.custom_disbursement_amount + doc.custom_dealer_interest_subsidy
+    amount = doc.custom_disbursement_amount + doc.custom_finance_charges
     reference = None
     for ref in doc.references:
         reference = ref.reference_name
