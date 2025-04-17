@@ -1,5 +1,10 @@
 
 frappe.ui.form.on("Payment Entry", {
+    after_save: function(frm) {
+        if (frm.doc.mode_of_payment == "Consumer Finance" || frm.doc.mode_of_payment == "Credit Card") {
+            frappe.set_route("Form", "Journal Entry", frm.doc.remarks);
+        }
+},
     mode_of_payment: function (frm) {
         if (frm.doc.mode_of_payment == "Consumer Finance") {
             let orders = []

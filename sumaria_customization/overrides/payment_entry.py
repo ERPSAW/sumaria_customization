@@ -62,6 +62,7 @@ def create_journal_entry(doc):
     )
     jvdoc.save()
     jvdoc.submit()
+    doc.remarks = jvdoc.name
 
 
 def create_journal_entry_credit_card(doc, method=None):
@@ -129,6 +130,7 @@ def create_journal_entry_credit_card(doc, method=None):
     )
     jvdoc.save()
     jvdoc.submit()
+    doc.remarks = jvdoc.name
 
 def create_charges_invoice(doc):
     sales_invoice={
