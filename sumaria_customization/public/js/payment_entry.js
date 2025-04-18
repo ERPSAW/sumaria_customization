@@ -51,13 +51,10 @@ frappe.ui.form.on("Payment Entry", {
     custom_interest_subvention: function (frm) {
         calculate_credit_card(frm);
     },
-    custom_finance_charges: function (frm) {
-        calculate_finance(frm);
-    }
 });
 function calculate_finance(frm) {
     if (frm.doc.mode_of_payment == "Consumer Finance") {
-        disbursement_amount = frm.doc.custom_product_price - frm.doc.custom_finance_charges - frm.doc.custom_down_payment;
+        disbursement_amount = frm.doc.custom_product_price - frm.doc.custom_dealer_interest_subsidy - frm.doc.custom_down_payment;
         frm.set_value('custom_disbursement_amount', disbursement_amount);
         frm.set_value('paid_amount', frm.doc.custom_down_payment);
         if((frm.doc.custom_dealer_interest_subsidy/frm.doc.custom_product_price)*100 > 3.54){

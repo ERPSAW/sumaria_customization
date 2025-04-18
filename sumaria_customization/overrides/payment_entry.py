@@ -4,7 +4,8 @@ import frappe
 def validate(doc, method=None):
     if doc.mode_of_payment == "Consumer Finance":
         create_journal_entry(doc)
-        create_charges_invoice(doc)
+        if doc.custom_finance_charges > 0:
+            create_charges_invoice(doc)
         frappe.enqueue(
             "sumaria_customization.overrides.payment_entry.delete_pe",
             enqueue_after_commit=True,
@@ -21,7 +22,7 @@ def validate(doc, method=None):
         )
 
 def create_journal_entry(doc):
-    amount = doc.custom_disbursement_amount + doc.custom_finance_charges
+    amount = doc.custom_disbursement_amount + doc.custom_dealer_interest_subsidy
     reference = None
     for ref in doc.references:
         reference = ref.reference_name
@@ -66,6 +67,7 @@ def create_journal_entry(doc):
             "branch": doc.branch,
             "reference_type": "Sales Order",
             "reference_name": reference,
+            "is_advance":"Yes"
         },
     )
     jvdoc.save()
@@ -136,6 +138,7 @@ def create_journal_entry_credit_card(doc, method=None):
             "branch": doc.branch,
             "reference_type": "Sales Order",
             "reference_name": reference,
+            "is_advance":"Yes"
         },
     )
     jvdoc.save()
