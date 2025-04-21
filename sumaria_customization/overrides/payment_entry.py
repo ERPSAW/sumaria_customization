@@ -24,9 +24,6 @@ def validate(doc, method=None):
 
 def create_journal_entry(doc):
     amount = doc.custom_disbursement_amount + doc.custom_dealer_interest_subsidy
-    reference = None
-    for ref in doc.references:
-        reference = ref.reference_name
     journal_entry = {
         "doctype": "Journal Entry",
         "company": doc.company,
@@ -56,30 +53,28 @@ def create_journal_entry(doc):
             "branch": doc.branch,
         },
     )
-    jvdoc.append(
-        "accounts",
-        {
-            "account": frappe.db.get_value(
-                "Company", doc.company, "default_receivable_account"
-            ),
-            "party_type": doc.party_type,
-            "party": doc.party,
-            "credit_in_account_currency": amount,
-            "branch": doc.branch,
-            "reference_type": "Sales Order",
-            "reference_name": reference,
-            "is_advance":"Yes"
-        },
-    )
+    for ref in doc.references:
+        jvdoc.append(
+            "accounts",
+            {
+                "account": frappe.db.get_value(
+                    "Company", doc.company, "default_receivable_account"
+                ),
+                "party_type": doc.party_type,
+                "party": doc.party,
+                "credit_in_account_currency": amount,
+                "branch": doc.branch,
+                "reference_type": ref.reference_doctype,
+                "reference_name": ref.reference_name,
+                "is_advance":"Yes"
+            },
+        )
     jvdoc.save()
     jvdoc.submit()
     doc.remarks = jvdoc.name
 
 
 def create_journal_entry_credit_card(doc, method=None):
-    reference = None
-    for ref in doc.references:
-        reference = ref.reference_name
     journal_entry = {
         "doctype": "Journal Entry",
         "company": doc.company,
@@ -127,21 +122,22 @@ def create_journal_entry_credit_card(doc, method=None):
             "branch": doc.branch,
         },
     )
-    jvdoc.append(
-        "accounts",
-        {
-            "account": frappe.db.get_value(
-                "Company", doc.company, "default_receivable_account"
-            ),
-            "party_type": doc.party_type,
-            "party": doc.party,
-            "credit_in_account_currency": doc.custom_swipe_amount,
-            "branch": doc.branch,
-            "reference_type": "Sales Order",
-            "reference_name": reference,
-            "is_advance":"Yes"
-        },
-    )
+    for ref in doc.references:
+        jvdoc.append(
+            "accounts",
+            {
+                "account": frappe.db.get_value(
+                    "Company", doc.company, "default_receivable_account"
+                ),
+                "party_type": doc.party_type,
+                "party": doc.party,
+                "credit_in_account_currency": ref.allocated_amount,
+                "branch": doc.branch,
+                "reference_type": ref.reference_doctype,
+                "reference_name": ref.reference_name,
+                "is_advance":"Yes"
+            },
+        )
     jvdoc.save()
     jvdoc.submit()
     doc.remarks = jvdoc.name
