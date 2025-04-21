@@ -1,5 +1,6 @@
 import frappe
-
+from erpnext.accounts.doctype.payment_entry.payment_entry import get_outstanding_reference_documents
+import json
 
 def validate(doc, method=None):
     if doc.mode_of_payment == "Consumer Finance":
@@ -167,3 +168,12 @@ def create_charges_invoice(doc):
 
 def delete_pe(name):
     frappe.delete_doc("Payment Entry", name)
+
+@frappe.whitelist()
+def get_refs(args):
+    if isinstance(args, str):
+        args = json.loads(args)
+    args["get_outstanding_invoices"] = True
+    args["get_orders_to_be_billed"] = True
+    
+    return get_outstanding_reference_documents(args)
