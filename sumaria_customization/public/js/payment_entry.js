@@ -18,7 +18,7 @@ function calculate_paid(frm) {
         });
         if (total)
             frm.set_value("paid_amount", total);
-        if (frm.doc.mode_of_payment == "Credit Card") 
+        if (frm.doc.mode_of_payment == "Credit Card")
             frm.set_value("custom_swipe_amount", total);
 
     }
@@ -30,7 +30,7 @@ frappe.ui.form.on("Payment Entry", {
         }
     },
     mode_of_payment: function (frm) {
-        if (frm.doc.mode_of_payment != "Consumer Finance") {
+        if (frm.doc.mode_of_payment == "Consumer Finance") {
             let docs = []
             let types = []
             for (var i in frm.doc.references) {
@@ -53,77 +53,81 @@ frappe.ui.form.on("Payment Entry", {
         }
     },
     party: function (frm) {
-        frm.clear_table("references");
+        if (frm.doc.mode_of_payment != "Consumer Finance") {
+            frm.clear_table("references");
 
-        if (!frm.doc.party) {
-            return;
-        }
-        var company_currency = frappe.get_doc(":Company", frm.doc.company).default_currency;
+            if (!frm.doc.party) {
+                return;
+            }
+            var company_currency = frappe.get_doc(":Company", frm.doc.company).default_currency;
 
-        var args = {
-            posting_date: frm.doc.posting_date,
-            company: frm.doc.company,
-            party_type: frm.doc.party_type,
-            payment_type: frm.doc.payment_type,
-            party: frm.doc.party,
-            party_account: frm.doc.payment_type == "Receive" ? frm.doc.paid_from : frm.doc.paid_to,
-            cost_center: frm.doc.cost_center,
-        };
+            var args = {
+                posting_date: frm.doc.posting_date,
+                company: frm.doc.company,
+                party_type: frm.doc.party_type,
+                payment_type: frm.doc.payment_type,
+                party: frm.doc.party,
+                party_account: frm.doc.payment_type == "Receive" ? frm.doc.paid_from : frm.doc.paid_to,
+                cost_center: frm.doc.cost_center,
+            };
 
-        return frappe.call({
-            method: "sumaria_customization.overrides.payment_entry.get_refs",
-            args: {
-                args: args,
-            },
-            callback: function (r, rt) {
-                if (r.message) {
-                    var total_positive_outstanding = 0;
-                    var total_negative_outstanding = 0;
-                    var total = 0;
-                    for (var i in r.message) {
-                        total += r.message[i].outstanding_amount;
-                    }
-                    frm.set_value("paid_amount", total);
-                    if (frm.doc.mode_of_payment == "Credit Card") 
-                        frm.set_value("custom_swipe_amount", total);
-                    $.each(r.message, function (i, d) {
-                        var c = frm.add_child("references");
-                        c.reference_doctype = d.voucher_type;
-                        c.reference_name = d.voucher_no;
-                        c.due_date = d.due_date;
-                        c.total_amount = d.invoice_amount;
-                        c.outstanding_amount = d.outstanding_amount;
-                        c.bill_no = d.bill_no;
-                        c.payment_term = d.payment_term;
-                        c.payment_term_outstanding = d.payment_term_outstanding;
-                        c.allocated_amount = d.outstanding_amount;
-                        c.account = d.account;
-
-
-                        if (!in_list(frm.events.get_order_doctypes(frm), d.voucher_type)) {
-                            if (flt(d.outstanding_amount) > 0)
-                                total_positive_outstanding += flt(d.outstanding_amount);
-                            else total_negative_outstanding += Math.abs(flt(d.outstanding_amount));
+            return frappe.call({
+                method: "sumaria_customization.overrides.payment_entry.get_refs",
+                args: {
+                    args: args,
+                },
+                callback: function (r, rt) {
+                    if (r.message) {
+                        var total_positive_outstanding = 0;
+                        var total_negative_outstanding = 0;
+                        var total = 0;
+                        for (var i in r.message) {
+                            total += r.message[i].outstanding_amount;
                         }
-
-                        var party_account_currency =
-                            frm.doc.payment_type == "Receive"
-                                ? frm.doc.paid_from_account_currency
-                                : frm.doc.paid_to_account_currency;
-
-                        if (party_account_currency != company_currency) {
-                            c.exchange_rate = d.exchange_rate;
-                        } else {
-                            c.exchange_rate = 1;
-                        }
-                        if (in_list(frm.events.get_invoice_doctypes(frm), d.reference_doctype)) {
+                        frm.set_value("paid_amount", total);
+                        if (frm.doc.mode_of_payment == "Credit Card")
+                            frm.set_value("custom_swipe_amount", total);
+                        $.each(r.message, function (i, d) {
+                            var c = frm.add_child("references");
+                            c.reference_doctype = d.voucher_type;
+                            c.reference_name = d.voucher_no;
                             c.due_date = d.due_date;
-                        }
-                    });
-                }
+                            c.total_amount = d.invoice_amount;
+                            c.outstanding_amount = d.outstanding_amount;
+                            c.bill_no = d.bill_no;
+                            c.payment_term = d.payment_term;
+                            c.payment_term_outstanding = d.payment_term_outstanding;
+                            c.allocated_amount = d.outstanding_amount;
+                            c.account = d.account;
 
-            },
-        });
+
+                            if (!in_list(frm.events.get_order_doctypes(frm), d.voucher_type)) {
+                                if (flt(d.outstanding_amount) > 0)
+                                    total_positive_outstanding += flt(d.outstanding_amount);
+                                else total_negative_outstanding += Math.abs(flt(d.outstanding_amount));
+                            }
+
+                            var party_account_currency =
+                                frm.doc.payment_type == "Receive"
+                                    ? frm.doc.paid_from_account_currency
+                                    : frm.doc.paid_to_account_currency;
+
+                            if (party_account_currency != company_currency) {
+                                c.exchange_rate = d.exchange_rate;
+                            } else {
+                                c.exchange_rate = 1;
+                            }
+                            if (in_list(frm.events.get_invoice_doctypes(frm), d.reference_doctype)) {
+                                c.due_date = d.due_date;
+                            }
+                        });
+                    }
+
+
+                },
+
+            });
+        }
     },
     custom_down_payment: function (frm) {
         calculate_finance(frm);
