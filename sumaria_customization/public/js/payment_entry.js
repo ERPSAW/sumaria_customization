@@ -24,12 +24,20 @@ function calculate_paid(frm) {
     }
 }
 frappe.ui.form.on("Payment Entry", {
+    refresh: function (frm) {
+        if (frm.doc.mode_of_payment == "Credit Card") {
+            frm.set_df_property('paid_amount', 'read_only', 1);
+        }
+    },
     after_save: function (frm) {
         if (frm.doc.mode_of_payment == "Consumer Finance" || frm.doc.mode_of_payment == "Credit Card") {
             frappe.set_route("Form", "Journal Entry", frm.doc.remarks);
         }
     },
     mode_of_payment: function (frm) {
+        if (frm.doc.mode_of_payment == "Credit Card") {
+            frm.set_df_property('paid_amount', 'read_only', 1);
+        }
         if (frm.doc.mode_of_payment == "Consumer Finance") {
             let docs = []
             let types = []
@@ -98,8 +106,7 @@ function calculate_finance(frm) {
 
 function calculate_credit_card(frm) {
     if (frm.doc.mode_of_payment == "Credit Card") {
-        let paid_amount = frm.doc.custom_swipe_amount - frm.doc.custom_instant_cash_discount - frm.doc.custom_interest_subvention;
-        //frm.set_value('paid_amount', paid_amount);
+        frm.set_value('paid_amount', frm.doc.custom_swipe_amount);
     }
 }
 function fetch_refs(frm) {
