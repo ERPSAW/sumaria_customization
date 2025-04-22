@@ -62,7 +62,7 @@ def create_journal_entry(doc):
                 ),
                 "party_type": doc.party_type,
                 "party": doc.party,
-                "credit_in_account_currency": amount,
+                "credit_in_account_currency": ref.allocated_amount,
                 "branch": doc.branch,
                 "reference_type": ref.reference_doctype,
                 "reference_name": ref.reference_name,
