@@ -94,7 +94,7 @@ def create_journal_entry_credit_card(doc, method=None):
     bank_account = frappe.db.get_value(
         "Terminal Master Record", doc.custom_terminal_id, "merchant_bank"
     )
-    if doc.custom_instant_cash_discount != 0 and doc.custom_interest_subvention != 0:
+    if not ( doc.custom_instant_cash_discount == 0 and doc.custom_interest_subvention == 0):
         jvdoc.append(
             "accounts",
             {
