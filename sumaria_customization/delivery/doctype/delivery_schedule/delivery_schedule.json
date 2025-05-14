@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "DS-.YY.MM.-.#####",
+ "creation": "2025-05-05 02:09:07.565342",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date_up_to",
+  "get_deliveries",
+  "column_break_qsbc",
+  "section_break_zbpb",
+  "items_to_deliver",
+  "section_break_oanr",
+  "items_to_receive",
+  "section_break_qjwc",
+  "items_to_transfer"
+ ],
+ "fields": [
+  {
+   "default": "Today",
+   "fieldname": "date_up_to",
+   "fieldtype": "Date",
+   "label": "Date Up To"
+  },
+  {
+   "fieldname": "items_to_deliver",
+   "fieldtype": "Table",
+   "label": "Items to Deliver",
+   "options": "Delivery Schedule Delivery Item"
+  },
+  {
+   "fieldname": "column_break_qsbc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "get_deliveries",
+   "fieldtype": "Button",
+   "label": "Get Deliveries"
+  },
+  {
+   "fieldname": "section_break_zbpb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_oanr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items_to_receive",
+   "fieldtype": "Table",
+   "label": "Items to Receive",
+   "options": "Delivery Schedule Receive Item"
+  },
+  {
+   "fieldname": "section_break_qjwc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items_to_transfer",
+   "fieldtype": "Table",
+   "label": "Items to Transfer",
+   "options": "Delivery Schedule Transfer Item"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-15 02:56:19.258653",
+ "modified_by": "Administrator",
+ "module": "Delivery",
+ "name": "Delivery Schedule",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -13,6 +13,10 @@ doc_events = {
     "Payment Entry": {
         "validate": "sumaria_customization.overrides.payment_entry.validate",
     },
+    "Delivery Note": {
+        "on_submit": "sumaria_customization.overrides.delivery_note.update_sales_return",
+        "on_cancel": "sumaria_customization.overrides.delivery_note.update_sales_return",
+    },
 }
 
 doctype_js = {
