@@ -82,7 +82,7 @@ order by zone""",
                 },
             )
 
-    def before_save(self):
+    def on_submit(self):
 
         # delivery
         customers = {}
@@ -160,6 +160,8 @@ order by zone""",
                         "against_sales_order": item.sales_order,
                         "so_detail": item.sales_order_item,
                         "serial_no":item.serial_no,
+                        "custom_delivery_schedule":item.parent,
+                        "custom_ds_detail":item.name
                     }
                 item_data.update(data),
                 note.append(
@@ -202,6 +204,8 @@ order by zone""",
                         "item_code": item.item,
                         "qty": item.qty,
                         "t_warehouse": t_warehouse,
+                        "custom_delivery_schedule":item.parent,
+                        "custom_ds_detail":item.name
                     },
                 )
             note.save()
@@ -221,6 +225,8 @@ order by zone""",
                     if item.dn_detail == it.delivery_note_item:
                         item.qty = -(it.qty)
                         item.custom_sr_detail = it.sales_return_item
+                        item.custom_delivery_schedule = it.parent,
+                        item.custom_ds_detail = it.name
 
             note_doc.save()
 
@@ -246,6 +252,8 @@ order by zone""",
                         "qty": item.qty,
                         "s_warehouse": s_warehouse,
                         "t_warehouse": t_warehouse,
+                        "custom_delivery_schedule":item.parent,
+                        "custom_ds_detail":item.name
                     },
                 )
             note.save()

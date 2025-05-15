@@ -14,7 +14,8 @@
   "section_break_oanr",
   "items_to_receive",
   "section_break_qjwc",
-  "items_to_transfer"
+  "items_to_transfer",
+  "amended_from"
  ],
  "fields": [
   {
@@ -61,11 +62,22 @@
    "fieldtype": "Table",
    "label": "Items to Transfer",
    "options": "Delivery Schedule Transfer Item"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Delivery Schedule",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-05-15 02:56:19.258653",
+ "modified": "2025-05-15 23:57:07.747069",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule",
