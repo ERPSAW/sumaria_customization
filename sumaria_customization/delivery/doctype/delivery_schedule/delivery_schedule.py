@@ -17,16 +17,17 @@ class DeliverySchedule(Document):
             as_dict=True,
         )
         for order in orders:
-            item_data = {
-                "item": order.item,
-                "qty": order.quantity,
-                "sales_order": order.sales_order,
-                "zone": order.zone,
-                "zone_name": order.zone_name,
-                "customer": order.customer,
-                "sales_order_item": order.sales_order_item,
-            }
-            self.append("items_to_deliver", item_data)
+            if frappe.db.get_value("Item",order.item,'is_stock_item'):
+                item_data = {
+                    "item": order.item,
+                    "qty": order.quantity,
+                    "sales_order": order.sales_order,
+                    "zone": order.zone,
+                    "zone_name": order.zone_name,
+                    "customer": order.customer,
+                    "sales_order_item": order.sales_order_item,
+                }
+                self.append("items_to_deliver", item_data)
 
         # Pickups
         self.items_to_receive = []
@@ -45,22 +46,23 @@ order by zone""",
             as_dict=True,
         )
         for doc in docs:
-            self.append(
-                "items_to_receive",
-                {
-                    "item": doc.item,
-                    "qty": doc.quantity,
-                    "sales_order": doc.sales_order,
-                    "zone": doc.zone,
-                    "zone_name": doc.zone_name,
-                    "material_request": doc.material_request,
-                    "material_request_item": doc.material_request_item,
-                    "customer": doc.customer,
-                    "delivery_note": doc.delivery_note,
-                    "delivery_note_item": doc.delivery_note_item,
-                    "sales_return_item":doc.sales_return_item
-                },
-            )
+            if frappe.db.get_value("Item",doc.item,'is_stock_item'):
+                self.append(
+                    "items_to_receive",
+                    {
+                        "item": doc.item,
+                        "qty": doc.quantity,
+                        "sales_order": doc.sales_order,
+                        "zone": doc.zone,
+                        "zone_name": doc.zone_name,
+                        "material_request": doc.material_request,
+                        "material_request_item": doc.material_request_item,
+                        "customer": doc.customer,
+                        "delivery_note": doc.delivery_note,
+                        "delivery_note_item": doc.delivery_note_item,
+                        "sales_return_item":doc.sales_return_item
+                    },
+                )
 
         # Transfer
         self.items_to_transfer = []
@@ -70,17 +72,18 @@ order by zone""",
             as_dict=True,
         )
         for mr in mrs:
-            self.append(
-                "items_to_transfer",
-                {
-                    "item": mr.item,
-                    "qty": mr.quantity,
-                    "material_request": mr.material_request,
-                    "material_request_item": mr.material_request_item,
-                    "s_warehouse": mr.s_warehouse,
-                    "t_warehouse": mr.t_warehouse,
-                },
-            )
+            if frappe.db.get_value("Item",mr.item,'is_stock_item'):
+                self.append(
+                    "items_to_transfer",
+                    {
+                        "item": mr.item,
+                        "qty": mr.quantity,
+                        "material_request": mr.material_request,
+                        "material_request_item": mr.material_request_item,
+                        "s_warehouse": mr.s_warehouse,
+                        "t_warehouse": mr.t_warehouse,
+                    },
+                )
 
     def on_submit(self):
 
