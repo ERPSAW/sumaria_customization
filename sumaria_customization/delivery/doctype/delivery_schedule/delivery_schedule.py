@@ -4,9 +4,24 @@
 import frappe
 from frappe.model.document import Document
 from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return
+from frappe.utils import cint
+from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos_for_outward
 
 
 class DeliverySchedule(Document):
+    def get_serials(self,item_code,warehouse,qty):
+
+        kwargs = frappe._dict(
+			{
+				"item_code": item_code,
+				"warehouse": warehouse,
+				"based_on": frappe.db.get_single_value("Stock Settings", "pick_serial_and_batch_based_on"),
+			}
+		)
+        serial_nos = get_serial_nos_for_outward(kwargs)
+
+        return "\n".join(serial_nos[: cint(qty)])
+
     @frappe.whitelist()
     def get_deliveries(self):
         # Deliver
@@ -167,6 +182,13 @@ order by zone""",
                         "custom_ds_detail":item.name
                     }
                 item_data.update(data),
+                serial_no = self.get_serials(item.item,frappe.db.get_value('Sales Order Item',item.sales_order_item,'warehouse'),item.qty)
+                if not item_data['serial_no']:
+                    item_data["serial_no"] = serial_no
+                    item.serial_no = serial_no
+                if item_data['serial_no']:
+                    item_data["use_serial_batch_fields"] = 1
+                
                 note.append(
                     "items",
                     item_data,
