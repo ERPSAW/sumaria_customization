@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "pincode",
-  "zone_id"
+  "zone_id",
+  "zone_name"
  ],
  "fields": [
   {
@@ -21,11 +22,17 @@
    "fieldtype": "Link",
    "label": "Zone ID",
    "options": "Zone"
+  },
+  {
+   "fetch_from": "zone_id.zone_name",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-05 00:44:11.233557",
+ "modified": "2025-05-28 22:11:50.000231",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Pincode",
