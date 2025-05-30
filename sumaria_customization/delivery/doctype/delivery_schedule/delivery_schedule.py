@@ -295,6 +295,7 @@ order by zone""",
                             "custom_ds_detail": item.name,
                             "material_request":item.material_request,
                             "material_request_item":item.material_request_item,
+                            "custom_sales_order":item.sales_order
                         },
                     )
             if buy_se.items and len(buy_se.items) > 0:
