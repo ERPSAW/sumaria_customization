@@ -9,6 +9,11 @@
   "date_up_to",
   "get_deliveries",
   "column_break_qsbc",
+  "zone",
+  "column_break_qqnp",
+  "warehouse",
+  "column_break_tugd",
+  "branch",
   "section_break_zbpb",
   "items_to_deliver",
   "section_break_oanr",
@@ -72,12 +77,38 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Link",
+   "label": "Zone",
+   "options": "Zone"
+  },
+  {
+   "fieldname": "column_break_qqnp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_tugd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-15 23:57:07.747069",
+ "modified": "2025-05-29 09:41:04.148218",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule",
