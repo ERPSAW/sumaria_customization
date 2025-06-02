@@ -9,6 +9,9 @@ from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos_for_outward
 
 
 class DeliverySchedule(Document):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.serials = {}
     def get_serials(self,item_code,warehouse,qty):
 
         kwargs = frappe._dict(
@@ -18,9 +21,21 @@ class DeliverySchedule(Document):
 				"based_on": frappe.db.get_single_value("Stock Settings", "pick_serial_and_batch_based_on"),
 			}
 		)
-        serial_nos = get_serial_nos_for_outward(kwargs)
+        if item_code in self.serials.keys():
+            serial_nos = self.serials[item_code]
+        else:
+            result = frappe.db.sql("""SELECT sum(qty) as qty FROM `tabDelivery Note Item` WHERE docstatus = 0 AND item_code = %(item_code)s AND serial_no IS NOT NULL""",{"item_code":item_code},as_dict=1)
+            quantity = 0
+            if result[0]['qty']:
+                quantity = result[0 ]['qty']
+            serial_nos = get_serial_nos_for_outward(kwargs)
+            serial_nos = serial_nos[cint(quantity):]
+        
+        ret_serials = serial_nos[: cint(qty)]
+        sav_serials = serial_nos[cint(qty):]
+        self.serials[item_code] = sav_serials
 
-        return "\n".join(serial_nos[: cint(qty)])
+        return "\n".join(ret_serials)
 
     @frappe.whitelist()
     def get_deliveries(self):
