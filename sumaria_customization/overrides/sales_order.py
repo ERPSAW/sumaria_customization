@@ -25,7 +25,8 @@ def create_mr(doc, method=None):
             "custom_address":doc.address_display,
             "custom_contact_person":doc.contact_person,
             "custom_contact":doc.contact_display,     
-            "custom_mobile_no":doc.contact_mobile
+            "custom_mobile_no":doc.contact_mobile,
+            "custom_branch":doc.branch
         }
         request = frappe.get_doc(document)
         for item in doc.items:
