@@ -66,6 +66,9 @@ class DeliverySchedule(Document):
                     "zone_name": order.zone_name,
                     "customer": order.customer,
                     "sales_order_item": order.sales_order_item,
+                    "mobile_no": frappe.db.get_value("Sales Order",order.sales_order,"contact_mobile"),
+                    "branch_code": frappe.db.get_value("Sales Order",order.sales_order,"custom_branch_code"),
+                    "pin_code": frappe.db.get_value("Sales Order",order.sales_order,"custom_pin_code"),
                 }
                 self.append("items_to_deliver", item_data)
 
@@ -112,7 +115,10 @@ order by zone""",
                         "customer": doc.customer,
                         "delivery_note": doc.delivery_note,
                         "delivery_note_item": doc.delivery_note_item,
-                        "sales_return_item":doc.sales_return_item
+                        "sales_return_item":doc.sales_return_item,
+                        "mobile_no": frappe.db.get_value("Sales Order",doc.sales_order,"contact_mobile"),
+                        "branch_code": frappe.db.get_value("Sales Order",doc.sales_order,"custom_branch_code"),
+                        "pin_code": frappe.db.get_value("Sales Order",doc.sales_order,"custom_pin_code"),
                     },
                 )
 
@@ -144,6 +150,8 @@ order by zone""",
                         "material_request_item": mr.material_request_item,
                         "s_warehouse": mr.s_warehouse,
                         "t_warehouse": mr.t_warehouse,
+                        "branch_code_pickup": frappe.db.get_value("Warehouse",mr.s_warehouse,"custom_branch_code"),
+                        "branch_code_drop": frappe.db.get_value("Warehouse",mr.t_warehouse,"custom_branch_code"),
                     },
                 )
 

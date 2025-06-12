@@ -6,15 +6,18 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "material_request",
   "item",
   "qty",
-  "material_request",
   "material_request_item",
   "s_warehouse",
-  "t_warehouse"
+  "t_warehouse",
+  "branch_code_pickup",
+  "branch_code_drop"
  ],
  "fields": [
   {
+   "columns": 2,
    "fieldname": "item",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -23,12 +26,14 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "qty",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Qty"
   },
   {
+   "columns": 2,
    "fieldname": "material_request",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -55,12 +60,26 @@
    "label": "T Warehouse",
    "options": "Warehouse",
    "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "branch_code_pickup",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch Code(Pickup Location)"
+  },
+  {
+   "columns": 2,
+   "fieldname": "branch_code_drop",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Branch Code(Drop Location)"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-15 03:15:33.950837",
+ "modified": "2025-06-12 23:00:11.089717",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule Transfer Item",
