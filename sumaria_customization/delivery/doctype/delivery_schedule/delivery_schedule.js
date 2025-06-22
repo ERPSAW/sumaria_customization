@@ -2,6 +2,17 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Delivery Schedule", {
+    refresh: function (frm) {
+        frm.set_query("transporter", function (doc, cdt, cdn) {
+            var d = locals[cdt][cdn];
+            return {
+                filters: [
+                    ['Supplier', 'is_transporter', '=', 1],
+                ]
+            };
+        });
+
+    },
     get_deliveries: function (frm) {
         if (frm.doc.date_up_to) {
             frm.call({
@@ -11,7 +22,7 @@ frappe.ui.form.on("Delivery Schedule", {
                     console.log("Called");
                 }
             });
-        }else{
+        } else {
             frappe.throw("first select date");
         }
     }

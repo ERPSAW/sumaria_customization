@@ -12,6 +12,15 @@
   "warehouse",
   "column_break_qqnp",
   "branch",
+  "transporter_info_section",
+  "transporter",
+  "driver",
+  "transport_receipt_no",
+  "vehicle_no",
+  "column_break_vojz",
+  "transporter_name",
+  "driver_name",
+  "lr_date",
   "section_break_zbpb",
   "items_to_deliver",
   "section_break_oanr",
@@ -91,12 +100,62 @@
    "fieldtype": "Link",
    "label": "Branch",
    "options": "Branch"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "transporter_info_section",
+   "fieldtype": "Section Break",
+   "label": "Transporter Info"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "driver",
+   "fieldtype": "Link",
+   "label": "Driver",
+   "options": "Driver"
+  },
+  {
+   "fieldname": "transport_receipt_no",
+   "fieldtype": "Data",
+   "label": "Transport Receipt No"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle No"
+  },
+  {
+   "fieldname": "column_break_vojz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "transporter.supplier_name",
+   "fieldname": "transporter_name",
+   "fieldtype": "Data",
+   "label": "Transporter Name"
+  },
+  {
+   "fetch_from": "driver.full_name",
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name"
+  },
+  {
+   "default": "Today",
+   "fieldname": "lr_date",
+   "fieldtype": "Date",
+   "label": "Transport Receipt Date"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-22 20:27:03.276832",
+ "modified": "2025-06-23 02:58:35.078628",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule",

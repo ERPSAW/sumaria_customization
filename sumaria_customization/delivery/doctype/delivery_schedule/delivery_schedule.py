@@ -148,6 +148,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc = frappe.get_doc("Delivery Note",res.parent)
                 doc.set_posting_time = 1
                 doc.posting_date = self.date_up_to
+                doc = self.update_transporter_details(doc)
                 doc.save()
             if len(result)>0:
                 return True
@@ -169,7 +170,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 "customer": customer,
                 "set_warehouse": "",
                 "set_posting_time":1,
-                "posting_date":self.date_up_to
+                "posting_date":self.date_up_to,
             }
             note = frappe.get_doc(document)
             for item in customers[customer]:
@@ -248,6 +249,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     "items",
                     item_data,
                 )
+            note = self.update_transporter_details(note)
             note.save()
 
         # buyback & return
@@ -315,6 +317,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc = frappe.get_doc("Delivery Note",res.parent)
                 doc.set_posting_time = 1
                 doc.posting_date = self.date_up_to
+                doc = self.update_transporter_details(doc)
                 doc.save()
             if len(result)>0:
                 return True
@@ -345,6 +348,9 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 if not is_return_created(item.custom_sr_detail):
                     items.append(item)
             note_doc.items = items
+
+            note_doc = self.update_transporter_details(note_doc)
+
             if len(items)>0:
                 note_doc.save()
 
@@ -359,6 +365,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 return True
             else:
                 return False
+
+        #update transporter details
 
         # transfer
         warehouses = {}
@@ -392,3 +400,13 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     },
                 )
             note.save()
+
+    def update_transporter_details(self,doc):
+        doc.transporter = self.transporter
+        doc.transporter_name = self.transporter_name
+        doc.driver = self.driver
+        doc.driver_name = self.driver_name
+        doc.lr_no = self.transport_receipt_no
+        doc.lr_date = self.lr_date
+        doc.vehicle_no = self.vehicle_no
+        return doc
