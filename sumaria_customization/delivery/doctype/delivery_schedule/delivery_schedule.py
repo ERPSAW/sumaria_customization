@@ -42,15 +42,12 @@ class DeliverySchedule(Document):
         # Deliver
         self.items_to_deliver = []
         orders = frappe.db.sql(
-            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.custom_zone_id as zone,so.custom_zone_name as zone_name, so.customer as customer,so.branch as branch,soi.warehouse as warehouse from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes')) order by so.custom_zone_id;""",
+            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
             {"date": self.date_up_to},
             as_dict=True,
         )
         for order in orders:
             flag = True
-            if self.zone:
-                if order.zone != self.zone:
-                    flag = False
             if self.branch:
                 if order.branch != self.branch:
                     flag = False
@@ -62,13 +59,11 @@ class DeliverySchedule(Document):
                     "item": order.item,
                     "qty": order.quantity,
                     "sales_order": order.sales_order,
-                    "zone": order.zone,
-                    "zone_name": order.zone_name,
                     "customer": order.customer,
                     "sales_order_item": order.sales_order_item,
                     "mobile_no": frappe.db.get_value("Sales Order",order.sales_order,"contact_mobile"),
                     "branch_code": frappe.db.get_value("Sales Order",order.sales_order,"custom_branch_code"),
-                    "pin_code": frappe.db.get_value("Sales Order",order.sales_order,"custom_pin_code"),
+                    "pin_code": frappe.db.get_value("Address",frappe.db.get_value("Sales Order",order.sales_order,"shipping_address_name"),"pincode")#todo: chenge pincode source
                 }
                 self.append("items_to_deliver", item_data)
 
@@ -76,8 +71,6 @@ class DeliverySchedule(Document):
         self.items_to_receive = []
         docs = frappe.db.sql(
             """SELECT *,
-(SELECT custom_zone_id from `tabSales Order` WHERE name = query.sales_order) as zone,
-(SELECT custom_zone_name from `tabSales Order` WHERE name = query.sales_order) as zone_name,
 (SELECT branch from `tabSales Order` WHERE name = query.sales_order) as branch 
 FROM 
 (SELECT mri.item_code as item, mri.qty as quantity,mri.sales_order as sales_order, mr.name as material_request,mri.name as material_request_item ,mr.customer as customer,'' as delivery_note,'' as delivery_note_item,'' as sales_return_item,mri.warehouse as warehouse from `tabMaterial Request Item` as mri join `tabMaterial Request` as mr on mri.parent = mr.name 
@@ -85,7 +78,7 @@ WHERE mr.docstatus = 1 AND mri.schedule_date <= %(date)s AND mr.material_request
 UNION
 SELECT sri.item as item, sri.quantity as quantity,sr.sales_order as sales_order, '' as material_request,'' as material_request_item,sr.customer as customer, sri.delivery_note as delivery_note, sri.delivery_note_item as delivery_note_item, sri.name as sales_return_item, (SELECT custom_return_godown FROM `tabSales Order` WHERE name = sr.sales_order) as warehouse FROM `tabSales Return` as sr join `tabSales Return Item` as sri on sr.name = sri.parent 
 WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.delivered_qty) as query
-order by zone""",
+""",
             {"date": self.date_up_to},
             as_dict=True,
         )
@@ -97,9 +90,6 @@ order by zone""",
             if self.warehouse:
                 if self.warehouse != doc.warehouse:
                     flag = False
-            if self.zone:
-                if self.zone != doc.zone:
-                    flag = False
 
             if frappe.db.get_value("Item",doc.item,'is_stock_item') and flag: 
                 self.append(
@@ -108,8 +98,6 @@ order by zone""",
                         "item": doc.item,
                         "qty": doc.quantity,
                         "sales_order": doc.sales_order,
-                        "zone": doc.zone,
-                        "zone_name": doc.zone_name,
                         "material_request": doc.material_request,
                         "material_request_item": doc.material_request_item,
                         "customer": doc.customer,
@@ -118,7 +106,7 @@ order by zone""",
                         "sales_return_item":doc.sales_return_item,
                         "mobile_no": frappe.db.get_value("Sales Order",doc.sales_order,"contact_mobile"),
                         "branch_code": frappe.db.get_value("Sales Order",doc.sales_order,"custom_branch_code"),
-                        "pin_code": frappe.db.get_value("Sales Order",doc.sales_order,"custom_pin_code"),
+                        "pin_code": frappe.db.get_value("Address",frappe.db.get_value("Sales Order",order.sales_order,"shipping_address_name"),"pincode")   ,#todo: change pincode source
                     },
                 )
 
@@ -131,9 +119,6 @@ order by zone""",
         )
         for mr in mrs:
             flag = True
-            if self.zone:
-                if frappe.db.get_value("Warehouse",mr.t_warehouse,"custom_zone") != self.zone:
-                    flag = False
             if self.warehouse:
                 if self.warehouse != mr.t_warehouse:
                     flag = False
