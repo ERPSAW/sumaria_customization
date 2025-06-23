@@ -158,6 +158,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
         # delivery
         customers = {}
         for item in self.items_to_deliver:
+            if not item.check:
+                continue
             if not is_delivery_created(self,item.sales_order,item.sales_order_item):                       
                 if item.customer not in customers:
                     customers[item.customer] = [item]
@@ -257,6 +259,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
         notes_ret = {}
         item_details = {}
         for item in self.items_to_receive:
+            if not item.check:
+                continue
             if item.material_request:
                 if item.customer not in customers_buy:
                     customers_buy[item.customer] = [item]
@@ -371,6 +375,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
         # transfer
         warehouses = {}
         for item in self.items_to_transfer:
+            if not item.check:
+                continue
             if not is_transfer_created(self,item.material_request, item.material_request_item):
                 if (item.s_warehouse, item.t_warehouse) not in warehouses:
                     warehouses[(item.s_warehouse, item.t_warehouse)] = [item]
