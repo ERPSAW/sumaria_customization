@@ -175,18 +175,21 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
 
     def on_submit(self):
 
-        def is_delivery_created(self, order, order_item):
+        def is_delivery_created(self, order, order_item,row):
             result = frappe.db.sql(
-                """SELECT parent FROM `tabDelivery Note Item` WHERE docstatus = 0 AND against_sales_order = %(order)s AND so_detail = %(order_item)s""",
+                """SELECT name,parent FROM `tabDelivery Note Item` WHERE docstatus = 0 AND against_sales_order = %(order)s AND so_detail = %(order_item)s""",
                 {"order": order, "order_item": order_item},
                 as_dict=1,
             )
+            
             for res in result:
                 doc = frappe.get_doc("Delivery Note", res.parent)
                 doc.set_posting_time = 1
                 doc.posting_date = self.date_up_to
                 doc = self.update_transporter_details(doc)
                 doc.save()
+                frappe.db.set_value("Delivery Note Item",res.name,"custom_delivery_schedule",row.parent)
+                frappe.db.set_value("Delivery Note Item",res.name,"custom_ds_detail",row.name)
             if len(result) > 0:
                 return True
             else:
@@ -197,7 +200,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
         for item in self.items_to_deliver:
             if not item.check:
                 continue
-            if not is_delivery_created(self, item.sales_order, item.sales_order_item):
+            if not is_delivery_created(self, item.sales_order, item.sales_order_item,item):
                 if item.customer not in customers:
                     customers[item.customer] = [item]
                 else:
@@ -317,9 +320,9 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     notes_ret[item.delivery_note].append(item)
                     item_details[item.delivery_note].append(item.delivery_note_item)
 
-        def is_buy_se_created(request, request_item):
+        def is_buy_se_created(request, request_item,row):
             result = frappe.db.sql(
-                """SELECT parent FROM `tabStock Entry Detail` WHERE docstatus = 0 AND material_request = %(request)s AND material_request_item = %(request_item)s""",
+                """SELECT name,parent FROM `tabStock Entry Detail` WHERE docstatus = 0 AND material_request = %(request)s AND material_request_item = %(request_item)s""",
                 {"request": request, "request_item": request_item},
                 as_dict=1,
             )
@@ -328,6 +331,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc.set_posting_time = 1
                 doc.posting_date = self.date_up_to
                 doc.save()
+                frappe.db.set_value("Stock Entry Detail",res.name,"custom_ds_detail",row.name)
+                frappe.db.set_value("Stock Entry Detail",res.name,"custom_delivery_schedule",row.parent)
             if len(result) > 0:
                 return True
             else:
@@ -346,7 +351,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     "Material Request Item", item.material_request_item, "warehouse"
                 )
                 if not is_buy_se_created(
-                    item.material_request, item.material_request_item
+                    item.material_request, item.material_request_item, item
                 ):
                     buy_se.append(
                         "items",
@@ -364,9 +369,9 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
             if buy_se.items and len(buy_se.items) > 0:
                 buy_se.save()
 
-        def is_return_created(sr_detail):
+        def is_return_created(sr_detail,row):
             result = frappe.db.sql(
-                """SELECT parent FROM `tabDelivery Note Item` WHERE docstatus = 0 AND custom_sr_detail = %(sr_detail)s""",
+                """SELECT name,parent FROM `tabDelivery Note Item` WHERE docstatus = 0 AND custom_sr_detail = %(sr_detail)s""",
                 {"sr_detail": sr_detail},
                 as_dict=1,
             )
@@ -376,6 +381,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc.posting_date = self.date_up_to
                 doc = self.update_transporter_details(doc)
                 doc.save()
+                frappe.db.set_value("Delivery Note Item",res.name,"custom_delivery_schedule",row.parent)
+                frappe.db.set_value("Delivery Note Item",res.name,"custom_ds_detail",row.name)
             if len(result) > 0:
                 return True
             else:
@@ -402,8 +409,10 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                         item.custom_ds_detail = it.name
             items = []
             for item in note_doc.items:
-                if not is_return_created(item.custom_sr_detail):
-                    items.append(item)
+                for it in notes_ret[del_note]:
+                    if item.dn_detail == it.delivery_note_item:
+                        if not is_return_created(item.custom_sr_detail,it):
+                            items.append(item)
             note_doc.items = items
 
             note_doc = self.update_transporter_details(note_doc)
@@ -411,9 +420,9 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
             if len(items) > 0:
                 note_doc.save()
 
-        def is_transfer_created(self, request, request_item):
+        def is_transfer_created(self, request, request_item,row):
             result = frappe.db.sql(
-                """SELECT parent FROM `tabStock Entry Detail` WHERE docstatus = 0 AND material_request = %(request)s AND material_request_item = %(request_item)s""",
+                """SELECT name,parent FROM `tabStock Entry Detail` WHERE docstatus = 0 AND material_request = %(request)s AND material_request_item = %(request_item)s""",
                 {"request": request, "request_item": request_item},
                 as_dict=1,
             )
@@ -422,6 +431,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc.set_posting_time = 1
                 doc.posting_date = self.date_up_to
                 doc.save()
+                frappe.db.set_value("Stock Entry Detail",res.name,"custom_ds_detail",row.name)
+                frappe.db.set_value("Stock Entry Detail",res.name,"custom_delivery_schedule",row.parent)
             if len(result) > 0:
                 return True
             else:
@@ -435,7 +446,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
             if not item.check:
                 continue
             if not is_transfer_created(
-                self, item.material_request, item.material_request_item
+                self, item.material_request, item.material_request_item,item
             ):
                 if (item.s_warehouse, item.t_warehouse) not in warehouses:
                     warehouses[(item.s_warehouse, item.t_warehouse)] = [item]
