@@ -341,7 +341,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
         for customer in customers_buy.keys():
             document = {
                 "doctype": "Stock Entry",
-                "stock_entry_type": "Material Receipt",
+                "stock_entry_type": "Buyback Receipt",
                 "set_posting_time": 1,
                 "posting_date": self.date_up_to,
             }
