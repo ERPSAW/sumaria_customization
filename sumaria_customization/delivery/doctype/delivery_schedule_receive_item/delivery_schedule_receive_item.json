@@ -87,8 +87,7 @@
    "fieldname": "pin_code",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Shipping PIN Code",
-   "length": 1
+   "label": "Shipping PIN Code"
   },
   {
    "columns": 1,
@@ -108,7 +107,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-06-23 11:44:05.911158",
+ "modified": "2025-06-27 02:49:21.433268",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule Receive Item",

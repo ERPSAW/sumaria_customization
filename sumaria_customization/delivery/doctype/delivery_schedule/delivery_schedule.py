@@ -366,6 +366,10 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                             "custom_sales_order": item.sales_order,
                         },
                     )
+                add = frappe.db.get_value("Sales Order",item.sales_order,"shipping_address_name")
+                if add:
+                    buy_se.custom_shipping_address_name = add
+                    buy_se.custom_shipping_address_display = frappe.db.get_value("Sales Order",item.sales_order,"shipping_address")
             if buy_se.items and len(buy_se.items) > 0:
                 buy_se.save()
 
