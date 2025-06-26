@@ -489,18 +489,45 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
 
     @frappe.whitelist()
     def get_details(self):
+        def get_default_print_format(doctype):
+            meta = frappe.get_meta(doctype)
+            df = meta.get_field("print_format")
+            if df and df.default:
+                return df.default
+
+            default_from_ps = frappe.get_value(
+                "Property Setter",
+                {
+                    "doc_type": doctype,
+                    "property": "default_print_format"
+                },
+                "value"
+            )
+            if default_from_ps:
+                return default_from_ps
+
+            return "Standard"
         res_docs = frappe.db.sql(
             """SELECT DISTINCT parent from `tabDelivery Note Item` WHERE custom_delivery_schedule = %(sch)s""",
             {"sch": self.name},
             as_dict=1,
         )
-        print(res_docs)
-        docs = []
+        dns = []
         for doc in res_docs:
-            docs.append(doc.parent)
+            dns.append(doc.parent)
 
-        res_formats = frappe.get_all(
-            "Print Format", filters={"doc_type": "Delivery Note"}, pluck="name"
+        res_ses = frappe.db.sql(
+            """SELECT DISTINCT parent from `tabStock Entry Detail` WHERE custom_delivery_schedule = %(sch)s""",
+            {"sch": self.name},
+            as_dict=1,
         )
+        ses = []
+        for doc in res_ses:
+            ses.append(doc.parent)
+
+        del_pf = get_default_print_format("Delivery Note")
+        se_pf = get_default_print_format("Stock Entry")
+        ds_pf =get_default_print_format("Delivery Schedule")
     
-        return {"docs": docs, "print_formats": res_formats}
+        return {"dns": dns, "dn_pf": del_pf, "ses":ses, "se_pf":se_pf,"ds_pf":ds_pf}
+    
