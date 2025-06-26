@@ -131,7 +131,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                             "Address",
                             frappe.db.get_value(
                                 "Sales Order",
-                                order.sales_order,
+                                doc.sales_order,
                                 "shipping_address_name",
                             ),
                             "pincode",
