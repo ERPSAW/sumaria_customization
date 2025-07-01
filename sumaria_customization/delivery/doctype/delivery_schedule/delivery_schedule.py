@@ -521,7 +521,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
             dns.append(doc.parent)
 
         res_ses = frappe.db.sql(
-            """SELECT DISTINCT parent from `tabStock Entry Detail` WHERE custom_delivery_schedule = %(sch)s""",
+            """SELECT sed.parent as parent from `tabStock Entry Detail` as sed join `tabStock Entry` as se on se.name = sed.parent WHERE sed.custom_delivery_schedule = %(sch)s and se.stock_entry_type = 'Buyback Receipt' group by se.name""",
             {"sch": self.name},
             as_dict=1,
         )
