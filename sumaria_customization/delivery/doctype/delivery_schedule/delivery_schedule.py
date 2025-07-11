@@ -14,10 +14,26 @@ class DeliverySchedule(Document):
         self.serials = {}
     
     def validate(self):
+        del_items = []
         for idx,delivery in enumerate(self.items_to_deliver):
-            if delivery.has_serial:
+            if delivery.has_serial and delivery.check:
                 if not delivery.serial_no:
                     frappe.throw(f"Serial no is required at row {idx+1}")
+            if delivery.check:
+                del_items.append(delivery)                   
+        self.items_to_deliver = del_items
+
+        rec_items = []
+        for receive in self.items_to_receive:
+            if receive.check:
+                rec_items.append(receive)
+        self.items_to_receive = rec_items
+
+        trn_items = []
+        for transfer in self.items_to_transfer:
+            if transfer.check:
+                trn_items.append(transfer)
+        self.items_to_transfer = trn_items
 
     def get_serials(self, item_code, warehouse, qty):
 
@@ -204,6 +220,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
 
         # delivery
         customers = {}
+        del_items = []
         for item in self.items_to_deliver:
             if not item.check:
                 continue
@@ -212,6 +229,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     customers[item.customer] = [item]
                 else:
                     customers[item.customer].append(item)
+            del_items.append(item)                   
+        self.items_to_deliver = del_items
 
         for customer in customers.keys():
             document = {
