@@ -12,6 +12,12 @@ class DeliverySchedule(Document):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.serials = {}
+    
+    def validate(self):
+        for idx,delivery in enumerate(self.items_to_deliver):
+            if delivery.has_serial:
+                if not delivery.serial_no:
+                    frappe.throw(f"Serial no is required at row {idx+1}")
 
     def get_serials(self, item_code, warehouse, qty):
 
@@ -49,7 +55,7 @@ class DeliverySchedule(Document):
         # Deliver
         self.items_to_deliver = []
         orders = frappe.db.sql(
-            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
+            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,(SELECT has_serial_no FROM `tabItem` WHERE name = soi.item_code) as has_serial from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
             {"date": self.date_up_to},
             as_dict=True,
         )
@@ -80,7 +86,8 @@ class DeliverySchedule(Document):
                             "Sales Order", order.sales_order, "shipping_address_name"
                         ),
                         "pincode",
-                    ),  # todo: chenge pincode source
+                    ),
+                    "has_serial": order.has_serial
                 }
                 self.append("items_to_deliver", item_data)
 
