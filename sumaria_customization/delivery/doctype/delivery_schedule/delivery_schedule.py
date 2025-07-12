@@ -71,7 +71,7 @@ class DeliverySchedule(Document):
         # Deliver
         self.items_to_deliver = []
         orders = frappe.db.sql(
-            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,(SELECT has_serial_no FROM `tabItem` WHERE name = soi.item_code) as has_serial from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
+            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,(SELECT has_serial_no FROM `tabItem` WHERE name = soi.item_code) as has_serial,so.custom_warehouse_branch_code as warehouse_branch_code from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
             {"date": self.date_up_to},
             as_dict=True,
         )
@@ -103,7 +103,8 @@ class DeliverySchedule(Document):
                         ),
                         "pincode",
                     ),
-                    "has_serial": order.has_serial
+                    "has_serial": order.has_serial,
+                    "warehouse_branch_code":order.warehouse_branch_code
                 }
                 self.append("items_to_deliver", item_data)
 

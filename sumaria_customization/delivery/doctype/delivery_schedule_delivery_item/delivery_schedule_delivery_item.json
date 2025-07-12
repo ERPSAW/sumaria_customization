@@ -12,6 +12,7 @@
   "customer",
   "mobile_no",
   "branch_code",
+  "warehouse_branch_code",
   "item",
   "qty",
   "pin_code",
@@ -106,12 +107,20 @@
    "fieldname": "has_serial",
    "fieldtype": "Check",
    "label": "Has Serial"
+  },
+  {
+   "columns": 1,
+   "fieldname": "warehouse_branch_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Warehouse Branch Code",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-11 23:22:10.407908",
+ "modified": "2025-07-12 12:14:02.755167",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule Delivery Item",
