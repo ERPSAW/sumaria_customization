@@ -14,26 +14,27 @@ class DeliverySchedule(Document):
         self.serials = {}
     
     def validate(self):
-        del_items = []
-        for idx,delivery in enumerate(self.items_to_deliver):
-            if delivery.has_serial and delivery.check:
-                if not delivery.serial_no:
-                    frappe.throw(f"Serial no is required at row {idx+1}")
-            if delivery.check:
-                del_items.append(delivery)                   
-        self.items_to_deliver = del_items
+        if self.workflow_state == "Prepared":
+            del_items = []
+            for idx,delivery in enumerate(self.items_to_deliver):
+                if delivery.has_serial and delivery.check:
+                    if not delivery.serial_no:
+                        frappe.throw(f"Serial no is required at row {idx+1}")
+                if delivery.check:
+                    del_items.append(delivery)                   
+            self.items_to_deliver = del_items
 
-        rec_items = []
-        for receive in self.items_to_receive:
-            if receive.check:
-                rec_items.append(receive)
-        self.items_to_receive = rec_items
+            rec_items = []
+            for receive in self.items_to_receive:
+                if receive.check:
+                    rec_items.append(receive)
+            self.items_to_receive = rec_items
 
-        trn_items = []
-        for transfer in self.items_to_transfer:
-            if transfer.check:
-                trn_items.append(transfer)
-        self.items_to_transfer = trn_items
+            trn_items = []
+            for transfer in self.items_to_transfer:
+                if transfer.check:
+                    trn_items.append(transfer)
+            self.items_to_transfer = trn_items
 
     def get_serials(self, item_code, warehouse, qty):
 
