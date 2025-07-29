@@ -12,14 +12,22 @@ class DeliverySchedule(Document):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.serials = {}
+
+    def on_trash(self):
+        serial_and_batch_bundle_list = frappe.db.get_all("Serial and Batch Bundle", {"voucher_no": self.name, "voucher_type": self.doctype}, pluck="name")
+        for serial_and_batch_bundle in serial_and_batch_bundle_list:
+            frappe.delete_doc("Serial and Batch Bundle", serial_and_batch_bundle)
     
     def validate(self):
         if self.workflow_state == "Prepared":
             del_items = []
             for idx,delivery in enumerate(self.items_to_deliver):
-                if delivery.has_serial and delivery.check:
-                    if not delivery.serial_no:
-                        frappe.throw(f"Serial no is required at row {idx+1}")
+                # if delivery.has_serial and delivery.check:
+                #     if not delivery.serial_no:
+                #         frappe.throw(f"Serial no is required at row {idx+1}")
+                if (delivery.has_batch_no or delivery.has_serial_no) and delivery.check and not delivery.serial_and_batch_bundle:
+                    frappe.throw(f"Serial and Batch No is required at row {idx+1}")
+
                 if delivery.check:
                     del_items.append(delivery)                   
             self.items_to_deliver = del_items
@@ -36,43 +44,43 @@ class DeliverySchedule(Document):
                     trn_items.append(transfer)
             self.items_to_transfer = trn_items
 
-    def get_serials(self, item_code, warehouse, qty):
+    # def get_serials(self, item_code, warehouse, qty):
 
-        kwargs = frappe._dict(
-            {
-                "item_code": item_code,
-                "warehouse": warehouse,
-                "based_on": frappe.db.get_single_value(
-                    "Stock Settings", "pick_serial_and_batch_based_on"
-                ),
-            }
-        )
-        if item_code in self.serials.keys():
-            serial_nos = self.serials[item_code]
-        else:
-            result = frappe.db.sql(
-                """SELECT sum(qty) as qty FROM `tabDelivery Note Item` WHERE docstatus = 0 AND item_code = %(item_code)s AND serial_no IS NOT NULL""",
-                {"item_code": item_code},
-                as_dict=1,
-            )
-            quantity = 0
-            if result[0]["qty"]:
-                quantity = result[0]["qty"]
-            serial_nos = get_serial_nos_for_outward(kwargs)
-            serial_nos = serial_nos[cint(quantity) :]
+    #     kwargs = frappe._dict(
+    #         {
+    #             "item_code": item_code,
+    #             "warehouse": warehouse,
+    #             "based_on": frappe.db.get_single_value(
+    #                 "Stock Settings", "pick_serial_and_batch_based_on"
+    #             ),
+    #         }
+    #     )
+    #     if item_code in self.serials.keys():
+    #         serial_nos = self.serials[item_code]
+    #     else:
+    #         result = frappe.db.sql(
+    #             """SELECT sum(qty) as qty FROM `tabDelivery Note Item` WHERE docstatus = 0 AND item_code = %(item_code)s AND serial_no IS NOT NULL""",
+    #             {"item_code": item_code},
+    #             as_dict=1,
+    #         )
+    #         quantity = 0
+    #         if result[0]["qty"]:
+    #             quantity = result[0]["qty"]
+    #         serial_nos = get_serial_nos_for_outward(kwargs)
+    #         serial_nos = serial_nos[cint(quantity) :]
 
-        ret_serials = serial_nos[: cint(qty)]
-        sav_serials = serial_nos[cint(qty) :]
-        self.serials[item_code] = sav_serials
+    #     ret_serials = serial_nos[: cint(qty)]
+    #     sav_serials = serial_nos[cint(qty) :]
+    #     self.serials[item_code] = sav_serials
 
-        return "\n".join(ret_serials)
+    #     return "\n".join(ret_serials)
 
     @frappe.whitelist()
     def get_deliveries(self):
         # Deliver
         self.items_to_deliver = []
         orders = frappe.db.sql(
-            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,(SELECT has_serial_no FROM `tabItem` WHERE name = soi.item_code) as has_serial,so.custom_warehouse_branch_code as warehouse_branch_code from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
+            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,so.set_warehouse,so.custom_warehouse_branch_code as warehouse_branch_code from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
             {"date": self.date_up_to},
             as_dict=True,
         )
@@ -87,10 +95,13 @@ class DeliverySchedule(Document):
             if frappe.db.get_value("Item", order.item, "is_stock_item") and flag:
                 item_data = {
                     "item": order.item,
+                    "has_serial_no": frappe.db.get_value("Item", order.item, "has_serial_no"),
+                    "has_batch_no": frappe.db.get_value("Item", order.item, "has_batch_no"),
                     "qty": order.quantity,
                     "sales_order": order.sales_order,
                     "customer": order.customer,
                     "sales_order_item": order.sales_order_item,
+                    "delivery_source_warehouse": order.set_warehouse,
                     "mobile_no": frappe.db.get_value(
                         "Sales Order", order.sales_order, "contact_mobile"
                     ),
@@ -104,7 +115,6 @@ class DeliverySchedule(Document):
                         ),
                         "pincode",
                     ),
-                    "has_serial": order.has_serial,
                     "warehouse_branch_code":order.warehouse_branch_code
                 }
                 self.append("items_to_deliver", item_data)
@@ -173,9 +183,9 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
         )
         for mr in mrs:
             flag = True
-            if self.warehouse:
-                if self.warehouse != mr.t_warehouse:
-                    flag = False
+            # if self.warehouse:
+            #     if self.warehouse != mr.t_warehouse:
+            #         flag = False
             if self.branch:
                 if self.branch != mr.branch:
                     flag = False
@@ -184,6 +194,8 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     "items_to_transfer",
                     {
                         "item": mr.item,
+                        "has_serial_no": frappe.db.get_value("Item", mr.item, "has_serial_no"),
+                        "has_batch_no": frappe.db.get_value("Item", mr.item, "has_batch_no"),
                         "qty": mr.quantity,
                         "material_request": mr.material_request,
                         "material_request_item": mr.material_request_item,
@@ -212,9 +224,19 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc.set_posting_time = 1
                 doc.posting_date = self.date_up_to
                 doc = self.update_transporter_details(doc)
+                doc.set_warehouse = self.warehouse
                 doc.save()
                 frappe.db.set_value("Delivery Note Item",res.name,"custom_delivery_schedule",row.parent)
                 frappe.db.set_value("Delivery Note Item",res.name,"custom_ds_detail",row.name)
+                serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Delivery Item",row.name,"serial_and_batch_bundle")
+                serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
+                serial_and_batch_doc.voucher_type = "Delivery Note"
+                serial_and_batch_doc.voucher_no = doc.name
+                serial_and_batch_doc.voucher_detail_no = res.name
+                serial_and_batch_doc.posting_date = doc.posting_date
+                serial_and_batch_doc.posting_time = doc.posting_time
+                serial_and_batch_doc.save(ignore_permissions=True)
+                frappe.db.set_value("Delivery Note Item",res.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
             if len(result) > 0:
                 return True
             else:
@@ -228,105 +250,121 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 continue
             if not is_delivery_created(self, item.sales_order, item.sales_order_item,item):
                 if item.customer not in customers:
-                    customers[item.customer] = [item]
+                    customers[item.customer] = {}
+                
+                if item.delivery_source_warehouse not in customers[item.customer]:
+                    customers[item.customer][item.delivery_source_warehouse] = [item]
                 else:
-                    customers[item.customer].append(item)
-            del_items.append(item)                   
+                    customers[item.customer][item.delivery_source_warehouse].append(item)
+            del_items.append(item)
         self.items_to_deliver = del_items
 
         for customer in customers.keys():
-            document = {
-                "doctype": "Delivery Note",
-                "customer": customer,
-                "set_warehouse": "",
-                "set_posting_time": 1,
-                "posting_date": self.date_up_to,
-            }
-            note = frappe.get_doc(document)
-            for item in customers[customer]:
-                data = {}
-                if item.sales_order_item:
-                    (
-                        rate,
-                        price_list_rate,
-                        custom_return_item_rate,
-                        custom_return_item,
-                        custom_return_item_group,
-                        custom_return_qty,
-                        custom_return_item_amount,
-                        custom_additional_discount,
-                        custom_additional_discount_amount,
-                        discount_percentage,
-                        discount_amount,
-                        margin_type,
-                        margin_rate_or_amount,
-                        custom_is_return,
-                    ) = frappe.db.get_value(
-                        "Sales Order Item",
-                        item.sales_order_item,
-                        [
-                            "rate",
-                            "price_list_rate",
-                            "custom_return_item_rate",
-                            "custom_return_item",
-                            "custom_return_item_group",
-                            "custom_return_qty",
-                            "custom_return_item_amount",
-                            "custom_additional_discount",
-                            "custom_additional_discount_amount",
-                            "discount_percentage",
-                            "discount_amount",
-                            "margin_type",
-                            "margin_rate_or_amount",
-                            "custom_is_return",
-                        ],
-                    )
-                    data = {
-                        "rate": rate,
-                        "price_list_rate": price_list_rate,
-                        "custom_return_item_rate": custom_return_item_rate,
-                        "custom_return_item": custom_return_item,
-                        "custom_return_item_group": custom_return_item_group,
-                        "custom_return_qty": custom_return_qty,
-                        "custom_return_item_amount": custom_return_item_amount,
-                        "custom_additional_discount": custom_additional_discount,
-                        "custom_additional_discount_amount": custom_additional_discount_amount,
-                        "discount_percentage": discount_percentage,
-                        "discount_amount": discount_amount,
-                        "margin_type": margin_type,
-                        "margin_rate_or_amount": margin_rate_or_amount,
-                        "custom_is_return": custom_is_return,
-                    }
-                item_data = {
-                    "item_code": item.item,
-                    "qty": item.qty,
-                    "schedule_date": self.date_up_to,
-                    "against_sales_order": item.sales_order,
-                    "so_detail": item.sales_order_item,
-                    "serial_no": item.serial_no,
-                    "custom_delivery_schedule": item.parent,
-                    "custom_ds_detail": item.name,
+            for warehouse in customers[customer].keys():
+                document = {
+                    "doctype": "Delivery Note",
+                    "customer": customer,
+                    "set_warehouse": "",
+                    "set_posting_time": 1,
+                    "posting_date": self.date_up_to,
                 }
-                item_data.update(data),
-                serial_no = self.get_serials(
-                    item.item,
-                    frappe.db.get_value(
-                        "Sales Order Item", item.sales_order_item, "warehouse"
-                    ),
-                    item.qty,
-                )
-                if not item_data["serial_no"]:
-                    item_data["serial_no"] = serial_no
-                    item.serial_no = serial_no
-                if item_data["serial_no"]:
-                    item_data["use_serial_batch_fields"] = 1
+                note = frappe.get_doc(document)
+                for item in customers[customer][warehouse]:
+                    data = {}
+                    if item.sales_order_item:
+                        (
+                            rate,
+                            price_list_rate,
+                            custom_return_item_rate,
+                            custom_return_item,
+                            custom_return_item_group,
+                            custom_return_qty,
+                            custom_return_item_amount,
+                            custom_additional_discount,
+                            custom_additional_discount_amount,
+                            discount_percentage,
+                            discount_amount,
+                            margin_type,
+                            margin_rate_or_amount,
+                            custom_is_return,
+                        ) = frappe.db.get_value(
+                            "Sales Order Item",
+                            item.sales_order_item,
+                            [
+                                "rate",
+                                "price_list_rate",
+                                "custom_return_item_rate",
+                                "custom_return_item",
+                                "custom_return_item_group",
+                                "custom_return_qty",
+                                "custom_return_item_amount",
+                                "custom_additional_discount",
+                                "custom_additional_discount_amount",
+                                "discount_percentage",
+                                "discount_amount",
+                                "margin_type",
+                                "margin_rate_or_amount",
+                                "custom_is_return",
+                            ],
+                        )
+                        data = {
+                            "rate": rate,
+                            "price_list_rate": price_list_rate,
+                            "custom_return_item_rate": custom_return_item_rate,
+                            "custom_return_item": custom_return_item,
+                            "custom_return_item_group": custom_return_item_group,
+                            "custom_return_qty": custom_return_qty,
+                            "custom_return_item_amount": custom_return_item_amount,
+                            "custom_additional_discount": custom_additional_discount,
+                            "custom_additional_discount_amount": custom_additional_discount_amount,
+                            "discount_percentage": discount_percentage,
+                            "discount_amount": discount_amount,
+                            "margin_type": margin_type,
+                            "margin_rate_or_amount": margin_rate_or_amount,
+                            "custom_is_return": custom_is_return,
+                        }
+                    item_data = {
+                        "item_code": item.item,
+                        "qty": item.qty,
+                        "schedule_date": self.date_up_to,
+                        "against_sales_order": item.sales_order,
+                        "so_detail": item.sales_order_item,
+                        # "serial_no": item.serial_no,
+                        "custom_delivery_schedule": item.parent,
+                        "custom_ds_detail": item.name,
+                        "warehouse": item.delivery_source_warehouse,
+                    }
+                    item_data.update(data),
+                    # serial_no = self.get_serials(
+                    #     item.item,
+                    #     frappe.db.get_value(
+                    #         "Sales Order Item", item.sales_order_item, "warehouse"
+                    #     ),
+                    #     item.qty,
+                    # )
+                    # if not item_data["serial_no"]:
+                    #     item_data["serial_no"] = serial_no
+                    #     item.serial_no = serial_no
+                    # if item_data["serial_no"]:
+                    #     item_data["use_serial_batch_fields"] = 1
 
-                note.append(
-                    "items",
-                    item_data,
-                )
-            note = self.update_transporter_details(note)
-            note.save()
+                    note.append(
+                        "items",
+                        item_data,
+                    )
+                note = self.update_transporter_details(note)
+                note.save()
+
+                for item in note.items:
+                    serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Delivery Item",item.custom_ds_detail,"serial_and_batch_bundle")
+                    serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
+                    serial_and_batch_doc.voucher_type = "Delivery Note"
+                    serial_and_batch_doc.voucher_no = note.name
+                    serial_and_batch_doc.voucher_detail_no = item.name
+                    serial_and_batch_doc.posting_date = note.posting_date
+                    serial_and_batch_doc.posting_time = note.posting_time
+                    serial_and_batch_doc.save(ignore_permissions=True)
+                    frappe.db.set_value("Delivery Note Item",item.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
 
         # buyback & return
         customers_buy = {}
@@ -465,6 +503,14 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc.save()
                 frappe.db.set_value("Stock Entry Detail",res.name,"custom_ds_detail",row.name)
                 frappe.db.set_value("Stock Entry Detail",res.name,"custom_delivery_schedule",row.parent)
+                serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Transfer Item",row.name,"serial_and_batch_bundle")
+                serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
+                serial_and_batch_doc.voucher_type = "Stock Entry"
+                serial_and_batch_doc.voucher_no = doc.name
+                serial_and_batch_doc.voucher_detail_no = res.name
+                serial_and_batch_doc.posting_date = doc.posting_date
+                serial_and_batch_doc.posting_time = doc.posting_time
+                serial_and_batch_doc.save(ignore_permissions=True)
             if len(result) > 0:
                 return True
             else:
@@ -508,6 +554,17 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     },
                 )
             note.save()
+
+            for item in note.items:
+                serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Transfer Item",item.custom_ds_detail,"serial_and_batch_bundle")
+                serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
+                serial_and_batch_doc.voucher_type = "Stock Entry"
+                serial_and_batch_doc.voucher_no = note.name
+                serial_and_batch_doc.voucher_detail_no = item.name
+                serial_and_batch_doc.posting_date = note.posting_date
+                serial_and_batch_doc.posting_time = note.posting_time
+                serial_and_batch_doc.save(ignore_permissions=True)
+                frappe.db.set_value("Stock Entry Detail",item.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
 
     def update_transporter_details(self, doc):
         doc.transporter = self.transporter

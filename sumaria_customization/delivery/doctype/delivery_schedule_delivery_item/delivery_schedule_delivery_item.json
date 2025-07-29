@@ -14,11 +14,18 @@
   "branch_code",
   "warehouse_branch_code",
   "item",
+  "has_serial_no",
+  "has_batch_no",
   "qty",
   "pin_code",
-  "serial_no",
+  "pick_serial_batch_no",
+  "serial_and_batch_bundle",
   "sales_order_item",
-  "has_serial"
+  "column_break_ufgi",
+  "source_warehouse",
+  "change_source_warehouse",
+  "delivery_source_warehouse",
+  "remarks"
  ],
  "fields": [
   {
@@ -58,13 +65,9 @@
   {
    "fieldname": "sales_order_item",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Sales Order Item",
    "read_only": 1
-  },
-  {
-   "fieldname": "serial_no",
-   "fieldtype": "Small Text",
-   "label": "Serial No"
   },
   {
    "columns": 1,
@@ -103,29 +106,83 @@
    "label": "Check"
   },
   {
-   "default": "0",
-   "fieldname": "has_serial",
-   "fieldtype": "Check",
-   "label": "Has Serial"
-  },
-  {
    "columns": 1,
    "fieldname": "warehouse_branch_code",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Warehouse Branch Code",
    "read_only": 1
+  },
+  {
+   "fieldname": "pick_serial_batch_no",
+   "fieldtype": "Button",
+   "label": "Pick Serial / Batch No"
+  },
+  {
+   "fieldname": "serial_and_batch_bundle",
+   "fieldtype": "Link",
+   "label": "Serial and Batch Bundle",
+   "options": "Serial and Batch Bundle"
+  },
+  {
+   "default": "0",
+   "fetch_from": "item.has_serial_no",
+   "fieldname": "has_serial_no",
+   "fieldtype": "Check",
+   "label": "Has Serial No",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "item.has_batch_no",
+   "fieldname": "has_batch_no",
+   "fieldtype": "Check",
+   "label": "Has Batch No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ufgi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sales_order.set_warehouse",
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "Source Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "change_source_warehouse",
+   "fieldtype": "Check",
+   "label": "Change Source Warehouse"
+  },
+  {
+   "fieldname": "delivery_source_warehouse",
+   "fieldtype": "Link",
+   "label": "Delivery Source Warehouse",
+   "options": "Warehouse",
+   "read_only_depends_on": "eval: !doc.change_source_warehouse"
+  },
+  {
+   "depends_on": "eval: doc.change_source_warehouse",
+   "fieldname": "remarks",
+   "fieldtype": "Text",
+   "label": "Remarks",
+   "mandatory_depends_on": "eval: doc.change_source_warehouse"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-12 12:14:02.755167",
+ "modified": "2025-07-29 11:27:00.002211",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule Delivery Item",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

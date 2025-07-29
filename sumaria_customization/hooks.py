@@ -38,7 +38,8 @@ fixtures = [
 
 override_whitelisted_methods = {
 	"erpnext.stock.get_item_details.get_item_details": "sumaria_customization.overrides.get_item_details.get_item_details",
-	"erpnext.stock.get_item_details.apply_price_list": "sumaria_customization.overrides.get_item_details.apply_price_list"
+	"erpnext.stock.get_item_details.apply_price_list": "sumaria_customization.overrides.get_item_details.apply_price_list",
+    "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.add_serial_batch_ledgers": "sumaria_customization.overrides.serial_and_batch_bundle.add_serial_batch_ledgers",
 }
 
 # Apps
@@ -165,9 +166,9 @@ override_whitelisted_methods = {
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Serial and Batch Bundle": "sumaria_customization.overrides.serial_and_batch_bundle.SerialAndBatchBundle",
+}
 
 # Document Events
 # ---------------
