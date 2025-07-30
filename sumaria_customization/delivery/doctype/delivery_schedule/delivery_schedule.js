@@ -93,15 +93,40 @@ function print(frm) {
 
 frappe.ui.form.on("Delivery Schedule Delivery Item", {
     pick_serial_batch_no(frm, cdt, cdn) {
+		if (frm.is_new()){
+			frappe.msgprint(__("Please save the Delivery Schedule first"));
+			return;
+		}
         let row = locals[cdt][cdn];
         row.type_of_transaction = "Outward";
 
         let dialogHandler = new SerialBatchDialog(frm, row);
-    }
+    },
+	delivery_source_warehouse(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+		
+		if (row.serial_and_batch_bundle) {
+			frappe.call({
+				method: "sumaria_customization.delivery.doctype.delivery_schedule.delivery_schedule.delete_serial_batch_bundle",
+				args: {
+					bundle_name: row.serial_and_batch_bundle
+				},
+				callback: function (r) {
+					if (r.message) {
+						frappe.model.set_value(cdt, cdn, 'serial_and_batch_bundle', '');
+					}
+				}
+			});
+		}
+	}
 });
 
 frappe.ui.form.on("Delivery Schedule Transfer Item", {
 	pick_serial_batch_no(frm, cdt, cdn) {
+		if (frm.is_new()){
+			frappe.msgprint(__("Please save the Delivery Schedule first"));
+			return;
+		}
         let row = locals[cdt][cdn];
         row.type_of_transaction = "Outward";
 

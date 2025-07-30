@@ -29,7 +29,10 @@ class DeliverySchedule(Document):
                     frappe.throw(f"Serial and Batch No is required at row {idx+1}")
 
                 if delivery.check:
-                    del_items.append(delivery)                   
+                    del_items.append(delivery)
+                else:
+                    if delivery.serial_and_batch_bundle:
+                        frappe.delete_doc("Serial and Batch Bundle", delivery.serial_and_batch_bundle)              
             self.items_to_deliver = del_items
 
             rec_items = []
@@ -42,6 +45,9 @@ class DeliverySchedule(Document):
             for transfer in self.items_to_transfer:
                 if transfer.check:
                     trn_items.append(transfer)
+                else:
+                    if transfer.serial_and_batch_bundle:
+                        frappe.delete_doc("Serial and Batch Bundle", transfer.serial_and_batch_bundle)
             self.items_to_transfer = trn_items
 
     # def get_serials(self, item_code, warehouse, qty):
@@ -620,3 +626,9 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
     
         return {"dns": dns, "dn_pf": del_pf, "ses":ses, "se_pf":se_pf,"ds_pf":ds_pf}
     
+
+@frappe.whitelist()
+def delete_serial_batch_bundle(bundle_name):
+    doc = frappe.get_doc("Serial and Batch Bundle",bundle_name)
+    doc.delete()
+    return "Done"
