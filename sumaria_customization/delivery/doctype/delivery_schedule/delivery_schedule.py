@@ -6,6 +6,7 @@ from frappe.model.document import Document
 from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return
 from frappe.utils import cint
 from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos_for_outward
+from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
 
 
 class DeliverySchedule(Document):
@@ -86,10 +87,42 @@ class DeliverySchedule(Document):
         # Deliver
         self.items_to_deliver = []
         orders = frappe.db.sql(
-            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,so.set_warehouse,so.custom_warehouse_branch_code as warehouse_branch_code from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
+            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,so.set_warehouse,so.custom_warehouse_branch_code as warehouse_branch_code, '' as packed_item_name from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
             {"date": self.date_up_to},
             as_dict=True,
         )
+
+        packed_items = frappe.db.sql(
+            """
+                SELECT 
+                    pi.parent_detail_docname as sales_order_item,
+                    so.name as sales_order,
+                    pi.qty as quantity,
+                    pi.item_code as item, 
+                    so.customer as customer,
+                    so.branch as branch,
+                    pi.warehouse as warehouse,
+                    so.set_warehouse,
+                    so.custom_warehouse_branch_code as warehouse_branch_code,
+                    pi.name as packed_item_name
+                FROM
+                    `tabPacked Item` as pi 
+                LEFT JOIN
+                    `tabSales Order Item` as soi on pi.parent_detail_docname = soi.name
+                LEFT JOIN 
+                    `tabSales Order` as so on soi.parent = so.name 
+                WHERE 
+                    so.docstatus = 1 
+                    AND soi.delivery_date <= %(date)s
+                    AND soi.qty > soi.delivered_qty 
+                    AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));
+                """,
+            {"date": self.date_up_to},
+            as_dict=True,
+        )
+
+        orders += packed_items
+
         for order in orders:
             flag = True
             if self.branch:
@@ -121,7 +154,8 @@ class DeliverySchedule(Document):
                         ),
                         "pincode",
                     ),
-                    "warehouse_branch_code":order.warehouse_branch_code
+                    "warehouse_branch_code":order.warehouse_branch_code,
+                    "packed_item_name":order.packed_item_name
                 }
                 self.append("items_to_deliver", item_data)
 
@@ -234,135 +268,178 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                 doc.save()
                 frappe.db.set_value("Delivery Note Item",res.name,"custom_delivery_schedule",row.parent)
                 frappe.db.set_value("Delivery Note Item",res.name,"custom_ds_detail",row.name)
+                if row.packed_item_name:
+                    packed_item_row_id = frappe.db.get_value("Packed Item", {"parent_detail_docname": res.name, "parenttype": "Delivery Note"}, "name")
+                    serial_voucher_details_no = packed_item_row_id
+                else:
+                    serial_voucher_details_no = res.name
+
                 serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Delivery Item",row.name,"serial_and_batch_bundle")
                 serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
                 serial_and_batch_doc.voucher_type = "Delivery Note"
                 serial_and_batch_doc.voucher_no = doc.name
-                serial_and_batch_doc.voucher_detail_no = res.name
+                serial_and_batch_doc.voucher_detail_no = serial_voucher_details_no
                 serial_and_batch_doc.posting_date = doc.posting_date
                 serial_and_batch_doc.posting_time = doc.posting_time
                 serial_and_batch_doc.save(ignore_permissions=True)
-                frappe.db.set_value("Delivery Note Item",res.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
+                if row.packed_item_name:
+                    frappe.db.set_value("Packed Item", packed_item_row_id, "serial_and_batch_bundle", serial_and_batch_doc.name)
+                else:
+                    frappe.db.set_value("Delivery Note Item",res.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
             if len(result) > 0:
                 return True
             else:
                 return False
 
         # delivery
-        customers = {}
+        sales_orders = {}
         del_items = []
         for item in self.items_to_deliver:
             if not item.check:
                 continue
             if not is_delivery_created(self, item.sales_order, item.sales_order_item,item):
-                if item.customer not in customers:
-                    customers[item.customer] = {}
+                if item.sales_order not in sales_orders:
+                    sales_orders[item.sales_order] = {}
                 
-                if item.delivery_source_warehouse not in customers[item.customer]:
-                    customers[item.customer][item.delivery_source_warehouse] = [item]
+                if item.delivery_source_warehouse not in sales_orders[item.sales_order]:
+                    sales_orders[item.sales_order][item.delivery_source_warehouse] = [item]
                 else:
-                    customers[item.customer][item.delivery_source_warehouse].append(item)
+                    sales_orders[item.sales_order][item.delivery_source_warehouse].append(item)
             del_items.append(item)
         self.items_to_deliver = del_items
 
-        for customer in customers.keys():
-            for warehouse in customers[customer].keys():
-                document = {
-                    "doctype": "Delivery Note",
-                    "customer": customer,
-                    "set_warehouse": "",
-                    "set_posting_time": 1,
-                    "posting_date": self.date_up_to,
-                }
-                note = frappe.get_doc(document)
-                for item in customers[customer][warehouse]:
-                    data = {}
-                    if item.sales_order_item:
-                        (
-                            rate,
-                            price_list_rate,
-                            custom_return_item_rate,
-                            custom_return_item,
-                            custom_return_item_group,
-                            custom_return_qty,
-                            custom_return_item_amount,
-                            custom_additional_discount,
-                            custom_additional_discount_amount,
-                            discount_percentage,
-                            discount_amount,
-                            margin_type,
-                            margin_rate_or_amount,
-                            custom_is_return,
-                        ) = frappe.db.get_value(
-                            "Sales Order Item",
-                            item.sales_order_item,
-                            [
-                                "rate",
-                                "price_list_rate",
-                                "custom_return_item_rate",
-                                "custom_return_item",
-                                "custom_return_item_group",
-                                "custom_return_qty",
-                                "custom_return_item_amount",
-                                "custom_additional_discount",
-                                "custom_additional_discount_amount",
-                                "discount_percentage",
-                                "discount_amount",
-                                "margin_type",
-                                "margin_rate_or_amount",
-                                "custom_is_return",
-                            ],
-                        )
-                        data = {
-                            "rate": rate,
-                            "price_list_rate": price_list_rate,
-                            "custom_return_item_rate": custom_return_item_rate,
-                            "custom_return_item": custom_return_item,
-                            "custom_return_item_group": custom_return_item_group,
-                            "custom_return_qty": custom_return_qty,
-                            "custom_return_item_amount": custom_return_item_amount,
-                            "custom_additional_discount": custom_additional_discount,
-                            "custom_additional_discount_amount": custom_additional_discount_amount,
-                            "discount_percentage": discount_percentage,
-                            "discount_amount": discount_amount,
-                            "margin_type": margin_type,
-                            "margin_rate_or_amount": margin_rate_or_amount,
-                            "custom_is_return": custom_is_return,
-                        }
-                    item_data = {
-                        "item_code": item.item,
-                        "qty": item.qty,
-                        "schedule_date": self.date_up_to,
-                        "against_sales_order": item.sales_order,
-                        "so_detail": item.sales_order_item,
-                        # "serial_no": item.serial_no,
-                        "custom_delivery_schedule": item.parent,
-                        "custom_ds_detail": item.name,
-                        "warehouse": item.delivery_source_warehouse,
-                    }
-                    item_data.update(data),
-                    # serial_no = self.get_serials(
-                    #     item.item,
-                    #     frappe.db.get_value(
-                    #         "Sales Order Item", item.sales_order_item, "warehouse"
-                    #     ),
-                    #     item.qty,
-                    # )
-                    # if not item_data["serial_no"]:
-                    #     item_data["serial_no"] = serial_no
-                    #     item.serial_no = serial_no
-                    # if item_data["serial_no"]:
-                    #     item_data["use_serial_batch_fields"] = 1
+        for sales_order in sales_orders.keys():
+            for warehouse in sales_orders[sales_order].keys():
+                # document = {
+                #     "doctype": "Delivery Note",
+                #     "customer": customer,
+                #     "set_warehouse": "",
+                #     "set_posting_time": 1,
+                #     "posting_date": self.date_up_to,
+                # }
+                # note = frappe.get_doc(document)
+                # for item in customers[customer][warehouse]:
+                #     data = {}
+                #     if item.sales_order_item:
+                #         (
+                #             rate,
+                #             price_list_rate,
+                #             custom_return_item_rate,
+                #             custom_return_item,
+                #             custom_return_item_group,
+                #             custom_return_qty,
+                #             custom_return_item_amount,
+                #             custom_additional_discount,
+                #             custom_additional_discount_amount,
+                #             discount_percentage,
+                #             discount_amount,
+                #             margin_type,
+                #             margin_rate_or_amount,
+                #             custom_is_return,
+                #         ) = frappe.db.get_value(
+                #             "Sales Order Item",
+                #             item.sales_order_item,
+                #             [
+                #                 "rate",
+                #                 "price_list_rate",
+                #                 "custom_return_item_rate",
+                #                 "custom_return_item",
+                #                 "custom_return_item_group",
+                #                 "custom_return_qty",
+                #                 "custom_return_item_amount",
+                #                 "custom_additional_discount",
+                #                 "custom_additional_discount_amount",
+                #                 "discount_percentage",
+                #                 "discount_amount",
+                #                 "margin_type",
+                #                 "margin_rate_or_amount",
+                #                 "custom_is_return",
+                #             ],
+                #         )
+                #         data = {
+                #             "rate": rate,
+                #             "price_list_rate": price_list_rate,
+                #             "custom_return_item_rate": custom_return_item_rate,
+                #             "custom_return_item": custom_return_item,
+                #             "custom_return_item_group": custom_return_item_group,
+                #             "custom_return_qty": custom_return_qty,
+                #             "custom_return_item_amount": custom_return_item_amount,
+                #             "custom_additional_discount": custom_additional_discount,
+                #             "custom_additional_discount_amount": custom_additional_discount_amount,
+                #             "discount_percentage": discount_percentage,
+                #             "discount_amount": discount_amount,
+                #             "margin_type": margin_type,
+                #             "margin_rate_or_amount": margin_rate_or_amount,
+                #             "custom_is_return": custom_is_return,
+                #         }
+                #     item_data = {
+                #         "item_code": item.item,
+                #         "qty": item.qty,
+                #         "schedule_date": self.date_up_to,
+                #         "against_sales_order": item.sales_order,
+                #         "so_detail": item.sales_order_item,
+                #         # "serial_no": item.serial_no,
+                #         "custom_delivery_schedule": item.parent,
+                #         "custom_ds_detail": item.name,
+                #         "warehouse": item.delivery_source_warehouse,
+                #     }
+                #     item_data.update(data),
+                #     # serial_no = self.get_serials(
+                #     #     item.item,
+                #     #     frappe.db.get_value(
+                #     #         "Sales Order Item", item.sales_order_item, "warehouse"
+                #     #     ),
+                #     #     item.qty,
+                #     # )
+                #     # if not item_data["serial_no"]:
+                #     #     item_data["serial_no"] = serial_no
+                #     #     item.serial_no = serial_no
+                #     # if item_data["serial_no"]:
+                #     #     item_data["use_serial_batch_fields"] = 1
 
-                    note.append(
-                        "items",
-                        item_data,
-                    )
+                #     note.append(
+                #         "items",
+                #         item_data,
+                #     )
+
+                note = make_delivery_note(sales_order)
+                note.save()
+                packed_item_id_list = tuple(pi.parent_detail_docname for pi in note.packed_items)
+                so_item_id_list = tuple(item.sales_order_item for item in sales_orders[sales_order][warehouse])
+
+                for item in note.items:
+                    if item.name in packed_item_id_list:
+                        continue
+                    if item.so_detail in so_item_id_list:
+                        item.custom_delivery_schedule = frappe.db.get_value("Delivery Schedule Delivery Item", {"sales_order_item": item.so_detail, "item": item.item_code},"parent")
+                        item.custom_ds_detail = frappe.db.get_value("Delivery Schedule Delivery Item", {"sales_order_item": item.so_detail, "item": item.item_code},"name")
+                        continue
+                    note.items.remove(item)
+
+                item_id_name_list = tuple(item.name for item in note.items)
+                for item in note.packed_items:
+                    if item.parent_detail_docname in item_id_name_list:
+                        continue
+                    note.packed_items.remove(item)
+
                 note = self.update_transporter_details(note)
                 note.save()
 
                 for item in note.items:
-                    serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Delivery Item",item.custom_ds_detail,"serial_and_batch_bundle")
+                    if item.custom_ds_detail:
+                        serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Delivery Item",item.custom_ds_detail,"serial_and_batch_bundle")
+                        serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
+                        serial_and_batch_doc.voucher_type = "Delivery Note"
+                        serial_and_batch_doc.voucher_no = note.name
+                        serial_and_batch_doc.voucher_detail_no = item.name
+                        serial_and_batch_doc.posting_date = note.posting_date
+                        serial_and_batch_doc.posting_time = note.posting_time
+                        serial_and_batch_doc.save(ignore_permissions=True)
+                        frappe.db.set_value("Delivery Note Item",item.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
+                
+                for item in note.packed_items:
+                    so_item_id = frappe.db.get_value("Delivery Note Item", item.parent_detail_docname, "so_detail")
+                    serial_and_batch_bundle = frappe.db.get_value("Delivery Schedule Delivery Item",{"sales_order_item": so_item_id, "item": item.item_code},"serial_and_batch_bundle")
                     serial_and_batch_doc = frappe.get_doc("Serial and Batch Bundle",serial_and_batch_bundle)
                     serial_and_batch_doc.voucher_type = "Delivery Note"
                     serial_and_batch_doc.voucher_no = note.name
@@ -370,7 +447,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     serial_and_batch_doc.posting_date = note.posting_date
                     serial_and_batch_doc.posting_time = note.posting_time
                     serial_and_batch_doc.save(ignore_permissions=True)
-                    frappe.db.set_value("Delivery Note Item",item.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
+                    frappe.db.set_value("Packed Item",item.name, "serial_and_batch_bundle", serial_and_batch_doc.name)
 
         # buyback & return
         customers_buy = {}

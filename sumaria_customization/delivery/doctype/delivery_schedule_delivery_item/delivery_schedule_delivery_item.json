@@ -25,7 +25,8 @@
   "source_warehouse",
   "change_source_warehouse",
   "delivery_source_warehouse",
-  "remarks"
+  "remarks",
+  "packed_item_name"
  ],
  "fields": [
   {
@@ -171,12 +172,18 @@
    "fieldtype": "Text",
    "label": "Remarks",
    "mandatory_depends_on": "eval: doc.change_source_warehouse"
+  },
+  {
+   "fieldname": "packed_item_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Packed Item Name"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-29 11:27:00.002211",
+ "modified": "2025-08-04 11:35:43.531199",
  "modified_by": "Administrator",
  "module": "Delivery",
  "name": "Delivery Schedule Delivery Item",
