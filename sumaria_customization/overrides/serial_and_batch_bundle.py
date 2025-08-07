@@ -26,7 +26,10 @@ class SerialAndBatchBundle(BaseSerialAndBatchBundle):
 		for item in frappe.db.get_all("Delivery Schedule Delivery Item", {"serial_and_batch_bundle": self.name}):
 			frappe.db.set_value("Delivery Schedule Delivery Item", item.name, "serial_and_batch_bundle", None)
 
-		super().on_trash()
+		self.validate_voucher_no_docstatus()
+		if self.voucher_type != "Sales Order":
+			self.delink_refernce_from_voucher()
+			self.delink_reference_from_batch()
 
 	
 	def on_cancel(self):

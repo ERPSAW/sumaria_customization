@@ -14,6 +14,16 @@ class DeliverySchedule(Document):
         super().__init__(*args, **kwargs)
         self.serials = {}
 
+
+    def after_insert(self):
+        for item in self.items_to_deliver:
+            if item.serial_and_batch_bundle:
+                serial_doc = frappe.get_doc("Serial and Batch Bundle", item.serial_and_batch_bundle)
+                serial_doc.voucher_type = self.doctype
+                serial_doc.voucher_no = self.name
+                serial_doc.voucher_detail_no = item.name
+                serial_doc.save(ignore_permissions=True)
+
     def on_trash(self):
         serial_and_batch_bundle_list = frappe.db.get_all("Serial and Batch Bundle", {"voucher_no": self.name, "voucher_type": self.doctype}, pluck="name")
         for serial_and_batch_bundle in serial_and_batch_bundle_list:
@@ -87,7 +97,7 @@ class DeliverySchedule(Document):
         # Deliver
         self.items_to_deliver = []
         orders = frappe.db.sql(
-            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,so.set_warehouse,so.custom_warehouse_branch_code as warehouse_branch_code, '' as packed_item_name from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
+            """SELECT soi.name as sales_order_item,so.name as sales_order,soi.qty as quantity,soi.item_code as item, so.customer as customer,so.branch as branch,soi.warehouse as warehouse,so.set_warehouse,so.custom_warehouse_branch_code as warehouse_branch_code, '' as packed_item_name, soi.custom_serial_and_batch_bundle as serial_and_batch_bundle from `tabSales Order Item` as soi join `tabSales Order` as so on soi.parent = so.name WHERE so.docstatus = 1 AND soi.delivery_date <= %(date)s AND soi.qty > soi.delivered_qty AND ((so.custom_is_credit_delivery = 'No' AND so.rounded_total = so.advance_paid) OR (so.custom_is_credit_delivery = 'Yes'));""",
             {"date": self.date_up_to},
             as_dict=True,
         )
@@ -104,7 +114,8 @@ class DeliverySchedule(Document):
                     pi.warehouse as warehouse,
                     so.set_warehouse,
                     so.custom_warehouse_branch_code as warehouse_branch_code,
-                    pi.name as packed_item_name
+                    pi.name as packed_item_name,
+                    '' as serial_and_batch_bundle
                 FROM
                     `tabPacked Item` as pi 
                 LEFT JOIN
@@ -154,6 +165,7 @@ class DeliverySchedule(Document):
                         ),
                         "pincode",
                     ),
+                    "serial_and_batch_bundle": order.serial_and_batch_bundle,
                     "warehouse_branch_code":order.warehouse_branch_code,
                     "packed_item_name":order.packed_item_name
                 }

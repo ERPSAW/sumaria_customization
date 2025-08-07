@@ -9,6 +9,8 @@ doc_events = {
     "Sales Order": {
         "validate": "sumaria_customization.overrides.sales_order.check_discount",
         "on_submit": "sumaria_customization.overrides.sales_order.create_mr",
+        "on_cancel": "sumaria_customization.overrides.sales_order.cancel_serial_batch_bundle",
+        "on_trash": "sumaria_customization.overrides.sales_order.cancel_serial_batch_bundle",
     },
     "Payment Entry": {
         "validate": "sumaria_customization.overrides.payment_entry.validate",
