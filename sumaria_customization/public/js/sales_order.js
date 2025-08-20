@@ -504,6 +504,24 @@ class SerialBatchDialog {
 
 		if (scan_serial_no || scan_batch_no) {
 			frappe.call({
+				method: "sumaria_customization.overrides.serial_and_batch_bundle.is_serial_batch_no_exists",
+				args: {
+					item_code: this.row.item_code,
+					type_of_transaction: this.row.type_of_transaction,
+					serial_no: scan_serial_no,
+					batch_no: scan_batch_no,
+					warehouse: this.row.warehouse
+				},
+				callback: (r) => {
+					if(r.message.status == "success" || this.dialog.fields_dict.entries.df.data.length == 0){
+						this.row.warehouse = r.message.warehouse;
+						this.dialog.set_value("warehouse", r.message.warehouse);
+					} else if (r.message.status == "error") {
+						frappe.throw(r.message.message);
+					}
+				},
+			})
+			frappe.call({
 				method: "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.is_serial_batch_no_exists",
 				args: {
 					item_code: this.row.item_code,
