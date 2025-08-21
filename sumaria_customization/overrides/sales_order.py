@@ -47,3 +47,8 @@ def cancel_serial_batch_bundle(doc, method):
         if item.name:
             frappe.db.set_value("Sales Order Item", item.voucher_detail_no, "custom_serial_and_batch_bundle", None)
             frappe.delete_doc("Serial and Batch Bundle",item.name)
+
+@frappe.whitelist()
+def get_warehouse_from_serial_no(serial_no):
+    serial_doc = frappe.get_doc("Serial No",serial_no)
+    return serial_doc.warehouse

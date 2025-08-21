@@ -331,7 +331,6 @@ class SerialBatchDialog {
 			label: __("Warehouse"),
 			options: "Warehouse",
 			default: this.row.warehouse || this.row.s_warehouse,
-			read_only: 1,
 			onchange: () => {
                 this.row.warehouse = this.dialog.get_value("warehouse");
 				this.get_auto_data();
@@ -412,6 +411,24 @@ class SerialBatchDialog {
 						filters: this.get_serial_no_filters(),
 					};
 				},
+				onchange: () => {
+					let dialog_values = this.dialog.get_values();
+
+					if (!dialog_values.warehouse && dialog_values.entries[0].serial_no) {
+						frappe.call({
+							method: "sumaria_customization.overrides.sales_order.get_warehouse_from_serial_no",
+							args: {
+								serial_no: dialog_values.entries[0].serial_no,
+							},
+							callback: (r) => {
+								if (r.message) {
+									this.dialog.set_value("warehouse", r.message);
+									this.row.warehouse = r.message;
+								}
+							},
+						})
+					}
+				},
 			});
 		}
 
@@ -489,12 +506,16 @@ class SerialBatchDialog {
 
     get_serial_no_filters() {
 		let warehouse =
-			this.row?.type_of_transaction === "Outward" ? this.row.warehouse || this.row.s_warehouse : "";
+			this.row?.type_of_transaction === "Outward" ? this.dialog.get_value("warehouse") || '' : "";
 
-		return {
+		let filters = {
 			item_code: this.row.item_code,
-			warehouse: ["=", warehouse],
-		};
+		}
+
+		if (warehouse) {
+			filters.warehouse = warehouse;
+		}
+		return filters
 	}
 
     scan_barcode_data() {
