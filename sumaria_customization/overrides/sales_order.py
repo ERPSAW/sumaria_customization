@@ -40,6 +40,14 @@ def create_mr(doc, method=None):
             if item.custom_is_return and item.custom_return_item:
                 frappe.msgprint(f"Material Request is created for buyback item {item.custom_return_item}")
 
+        for item in doc.items:
+            if (item.custom_has_batch_no or item.custom_has_serial_no) and not item.custom_serial_and_batch_bundle:
+                frappe.throw("serial and batch bundle is required for {} item in row {}".format(item.item_name, item.idx))
+        
+        for item in doc.packed_items:
+            is_serial_no, is_batch_no = frappe.db.get_value("Item", item.item_code, ["has_serial_no", "has_batch_no"])
+            if not item.serial_and_batch_bundle and (is_serial_no or is_batch_no):
+                frappe.throw("serial and batch bundle is required for {} packed item in row {}".format(item.item_name, item.idx))
 
 def cancel_serial_batch_bundle(doc, method):
     serial_and_batch_bundle = frappe.db.get_list("Serial and Batch Bundle",{"voucher_type":"Sales Order","voucher_no":doc.name},["name", "voucher_detail_no"])
