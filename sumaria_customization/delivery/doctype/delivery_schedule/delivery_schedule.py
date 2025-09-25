@@ -30,6 +30,27 @@ class DeliverySchedule(Document):
             frappe.delete_doc("Serial and Batch Bundle", serial_and_batch_bundle)
     
     def validate(self):
+        if self.workflow_state == "Approved" and frappe.db.get_value("Delivery Schedule", self.name, "workflow_state") != "Approved":
+            for item in self.items_to_deliver:
+                if item.serial_and_batch_bundle and item.check:
+                    if item.sales_order_item:
+                        so_serial_bundle_list = frappe.db.get_all("Sales Order Item", {"custom_serial_and_batch_bundle": item.serial_and_batch_bundle, "parent": ["!=", item.sales_order_item]}, pluck="name")
+                        for serial_bundle in so_serial_bundle_list:
+                            frappe.db.set_value("Sales Order Item", serial_bundle, "custom_serial_and_batch_bundle", "")
+
+                    if item.packed_item_name:
+                        packed_serial_bundle_list = frappe.db.get_all("Packed Item", {"serial_and_batch_bundle": item.serial_and_batch_bundle, "parent": ["!=", item.packed_item_name]}, pluck="name")
+                        for serial_bundle in packed_serial_bundle_list:
+                            frappe.db.set_value("Packed Item", serial_bundle, "serial_and_batch_bundle", "")
+
+                    if item.sales_order_item and frappe.db.get_value("Sales Order Item", item.sales_order_item, "custom_serial_and_batch_bundle"):
+                        if item.serial_and_batch_bundle != frappe.db.get_value("Sales Order Item", item.sales_order_item, "custom_serial_and_batch_bundle"):
+                            frappe.db.set_value("Sales Order Item", item.sales_order_item, "custom_serial_and_batch_bundle", item.serial_and_batch_bundle)
+
+                    if item.packed_item_name and frappe.db.get_value("Packed Item", item.packed_item_name, "serial_and_batch_bundle"):
+                        if item.serial_and_batch_bundle != frappe.db.get_value("Packed Item", item.packed_item_name, "serial_and_batch_bundle"):
+                            frappe.db.set_value("Packed Item", item.packed_item_name, "serial_and_batch_bundle", item.serial_and_batch_bundle)
+
         if self.workflow_state == "Prepared":
             del_items = []
             for idx,delivery in enumerate(self.items_to_deliver):
