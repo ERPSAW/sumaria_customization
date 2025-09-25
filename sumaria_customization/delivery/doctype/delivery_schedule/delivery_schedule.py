@@ -64,7 +64,14 @@ class DeliverySchedule(Document):
                     del_items.append(delivery)
                 else:
                     if delivery.serial_and_batch_bundle:
-                        frappe.delete_doc("Serial and Batch Bundle", delivery.serial_and_batch_bundle)              
+                        serial_and_batch_bundle = None
+                        if delivery.sales_order_item:
+                            serial_and_batch_bundle = frappe.db.get_value("Sales Order Item", delivery.sales_order_item, "custom_serial_and_batch_bundle")
+                        if delivery.packed_item_name:
+                            serial_and_batch_bundle = frappe.db.get_value("Packed Item", delivery.packed_item_name, "serial_and_batch_bundle")
+                        if not serial_and_batch_bundle == delivery.serial_and_batch_bundle:
+                            frappe.delete_doc("Serial and Batch Bundle", delivery.serial_and_batch_bundle)
+
             self.items_to_deliver = del_items
 
             rec_items = []
