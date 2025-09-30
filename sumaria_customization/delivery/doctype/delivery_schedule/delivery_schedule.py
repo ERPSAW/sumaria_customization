@@ -143,7 +143,7 @@ class DeliverySchedule(Document):
                     so.set_warehouse,
                     so.custom_warehouse_branch_code as warehouse_branch_code,
                     pi.name as packed_item_name,
-                    '' as serial_and_batch_bundle
+                    pi.serial_and_batch_bundle as serial_and_batch_bundle
                 FROM
                     `tabPacked Item` as pi 
                 LEFT JOIN
@@ -449,6 +449,7 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
 
                 for item in note.items:
                     if item.name in packed_item_id_list:
+                        item.custom_delivery_schedule = frappe.db.get_value("Delivery Schedule Delivery Item", {"item": item.item_code},"parent")
                         continue
                     if item.so_detail in so_item_id_list:
                         item.custom_delivery_schedule = frappe.db.get_value("Delivery Schedule Delivery Item", {"sales_order_item": item.so_detail, "item": item.item_code},"parent")

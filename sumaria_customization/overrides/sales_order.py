@@ -1,4 +1,5 @@
 import frappe
+from frappe.desk.reportview import get_filters_cond, get_match_cond
 
 
 def check_discount(doc, method=None):
@@ -60,3 +61,48 @@ def cancel_serial_batch_bundle(doc, method):
 def get_warehouse_from_serial_no(serial_no):
     serial_doc = frappe.get_doc("Serial No",serial_no)
     return serial_doc.warehouse
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_available_serial_nos(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
+    """
+    Custom query for Serial Nos.
+    Only show serials that are 'Available' and NOT linked to Sales Order,
+    Delivery Schedule, or Delivery Note via Serial and Batch Bundle.
+    """
+
+    # Apply filters safely (item_code, warehouse, etc.)
+    fcond = get_filters_cond(doctype, filters, [])
+    mcond = get_match_cond(doctype)
+
+    fcond = fcond.replace("`tabSerial No`", "sn").replace("`", "")
+    mcond = mcond.replace("`tabSerial No`", "sn").replace("`", "")
+
+    query = f"""
+        SELECT sn.name, sn.item_code, sn.warehouse
+        FROM `tabSerial No` sn
+        WHERE sn.{searchfield} LIKE %(txt)s
+          AND sn.status = 'Active'
+          {fcond} {mcond}
+          AND sn.name NOT IN (
+              SELECT sb.serial_no
+              FROM `tabSerial and Batch Entry` sb
+              INNER JOIN `tabSerial and Batch Bundle` sbb
+                  ON sb.parent = sbb.name
+              WHERE sbb.docstatus < 2
+                AND sbb.voucher_type IN ('Sales Order', 'Delivery Schedule', 'Delivery Note')
+                AND sb.serial_no IS NOT NULL
+          )
+        ORDER BY sn.{searchfield} ASC
+        LIMIT %(page_len)s OFFSET %(start)s
+    """
+
+    return frappe.db.sql(
+        query,
+        {
+            "txt": f"%{txt}%",
+            "start": start,
+            "page_len": page_len,
+        },
+        as_dict=as_dict,
+    )

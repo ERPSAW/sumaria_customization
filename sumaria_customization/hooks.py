@@ -42,6 +42,7 @@ override_whitelisted_methods = {
 	"erpnext.stock.get_item_details.get_item_details": "sumaria_customization.overrides.get_item_details.get_item_details",
 	"erpnext.stock.get_item_details.apply_price_list": "sumaria_customization.overrides.get_item_details.apply_price_list",
     "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.add_serial_batch_ledgers": "sumaria_customization.overrides.serial_and_batch_bundle.add_serial_batch_ledgers",
+    "erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle.get_auto_data": "sumaria_customization.overrides.serial_and_batch_bundle.get_auto_data",
 }
 
 # Apps
