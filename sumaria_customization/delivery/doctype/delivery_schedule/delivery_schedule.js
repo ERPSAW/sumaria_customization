@@ -284,6 +284,7 @@ class SerialBatchDialog {
 				in_list_view: 1,
 				get_query: () => {
 					return {
+						query: "sumaria_customization.overrides.sales_order.get_available_serial_nos",
 						filters: this.get_serial_no_filters(),
 					};
 				},

@@ -464,6 +464,11 @@ WHERE sr.docstatus = 1 AND sri.schedule_date <= %(date)s and sri.quantity > sri.
                     note.packed_items.remove(item)
 
                 note = self.update_transporter_details(note)
+
+                for packed_item in note.packed_items:
+                    for item in note.items:
+                        if packed_item.parent_item == item.item_code:
+                            item.custom_delivery_schedule = self.name
                 note.save()
 
                 for item in note.items:
