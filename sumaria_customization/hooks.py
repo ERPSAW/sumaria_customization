@@ -66,7 +66,7 @@ override_whitelisted_methods = {
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/sumaria_customization/css/sumaria_customization.css"
-# app_include_js = "/assets/sumaria_customization/js/sumaria_customization.js"
+app_include_js = "/assets/sumaria_customization/js/serial_no_batch_selector.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/sumaria_customization/css/sumaria_customization.css"
