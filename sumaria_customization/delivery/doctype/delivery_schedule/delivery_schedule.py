@@ -89,6 +89,11 @@ class DeliverySchedule(Document):
                         frappe.delete_doc("Serial and Batch Bundle", transfer.serial_and_batch_bundle)
             self.items_to_transfer = trn_items
 
+        for item in self.items_to_deliver:
+            if item.check and item.serial_and_batch_bundle:
+                serial_no_list = frappe.db.get_all("Serial and Batch Entry", {"parent": item.serial_and_batch_bundle}, pluck="serial_no")
+                item.custom_serial_nos = ", ".join(serial_no_list)
+
     # def get_serials(self, item_code, warehouse, qty):
 
     #     kwargs = frappe._dict(

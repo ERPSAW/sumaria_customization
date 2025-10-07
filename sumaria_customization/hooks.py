@@ -16,8 +16,12 @@ doc_events = {
         "validate": "sumaria_customization.overrides.payment_entry.validate",
     },
     "Delivery Note": {
+        "validate": "sumaria_customization.overrides.delivery_note.update_serial_no",
         "on_submit": "sumaria_customization.overrides.delivery_note.update_sales_return",
         "on_cancel": "sumaria_customization.overrides.delivery_note.update_sales_return",
+    },
+    "Sales Invoice": {
+        "validate": "sumaria_customization.overrides.sales_invoice.update_serial_no",
     },
 }
 

@@ -10,6 +10,15 @@ def check_discount(doc, method=None):
              return_flag = True
         if item.discount_percentage >= max_discount:
             max_discount = item.discount_percentage
+        if item.custom_serial_and_batch_bundle:
+            serial_no_list = frappe.db.get_all("Serial and Batch Entry", {"parent": item.custom_serial_and_batch_bundle}, pluck="serial_no")
+            item.custom_serial_nos = ", ".join(serial_no_list)
+
+    for item in doc.packed_items:
+        if item.serial_and_batch_bundle:
+            serial_no_list = frappe.db.get_all("Serial and Batch Entry", {"parent": item.serial_and_batch_bundle}, pluck="serial_no")
+            item.custom_serial_nos = ", ".join(serial_no_list)
+
     doc.custom_max_discount = max_discount
     if return_flag and not doc.custom_return_godown:
          frappe.throw("return godown is required for buyback item")
